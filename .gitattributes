@@ -1,0 +1,10 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Hints for GitHub linguist library
+# See https://github.com/github/linguist#using-gitattributes
+Docs/* linguist-documentation
+Fab*/* linguist-documentation
+*.kicad_pcb linguist-detectable=true
+*.sch linguist-detectable=true
+

@@ -1,0 +1,19 @@
+set(c_SOURCE_FILES
+    "main.cpp"
+)
+
+set(c_PRIVATE_REQUIREMENTS
+    BoardDev34
+    BoardManager
+    Debouncer
+    ESP32SimpleOTA
+    ESP32DLEDController
+    ESP32Timers
+    esp_http_server
+)
+
+idf_component_register(
+    SRCS ${c_SOURCE_FILES}
+    INCLUDE_DIRS "."
+    PRIV_REQUIRES ${c_PRIVATE_REQUIREMENTS}
+)

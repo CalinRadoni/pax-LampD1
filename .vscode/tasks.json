@@ -1,0 +1,82 @@
+{
+    "version": "2.0.0",
+    "linux": {
+        "type": "shell",
+        "options": {
+            "cwd": "${workspaceFolder}/SW",
+            "env": {
+                "idf_py": "${env:IDF_PATH}/tools/idf.py",
+                "idf_python": "${env:IDF_PYTHON_ENV_PATH}/bin/python"
+            }
+        },
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "focus": true,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": false
+        },
+    },
+    "problemMatcher": [],
+    "tasks": [
+        {
+            "label": "ESP-IDF Build",
+            "command": "${idf_python} ${idf_py} build",
+            "problemMatcher": [
+                {
+                    "owner": "cpp",
+                    "fileLocation": ["relative", "${workspaceFolder}/SW"],
+                    "pattern": {
+                        "regexp": "^\\.\\.(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                },
+                {
+                    "owner": "cpp",
+                    "fileLocation": "absolute",
+                    "pattern": {
+                        "regexp": "^[^\\.](.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    }
+                }
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+        },
+        {
+            "label": "ESP-IDF Clean",
+            "command": "${idf_python} ${idf_py} fullclean"
+        },
+        {
+            "label": "ESP-IDF Flash",
+            "command": "${idf_python} ${idf_py} flash"
+        },
+        {
+            "label": "ESP-IDF Monitor",
+            "command": "${idf_python} ${idf_py} monitor"
+        },
+        {
+            "label": "ESP-IDF Partition table Build",
+            "command": "${idf_python} ${idf_py} partition_table"
+        },
+        {
+            "label": "ESP-IDF Partition table Flash",
+            "command": "${idf_python} ${idf_py} partition_table-flash"
+        },
+        {
+            "label": "ESP-IDF Size information",
+            "command": "${idf_python} ${idf_py} size-components"
+        },
+    ]
+}

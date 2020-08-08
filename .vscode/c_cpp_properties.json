@@ -1,0 +1,30 @@
+{
+    "env" : {
+        "idf_path": "${env:IDF_PATH}",
+        "codeLib_path": "${env:CodeLib_PATH}"
+    },
+    "configurations": [
+        {
+            "name": "Linux",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "${env:IDF_XTENSA_GCC}",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "defines": [ "ESP32", "ESP_PLATFORM" ],
+            "includePath": [
+                "${idf_path}/components/**",
+                "${codeLib_path}/**",
+                "${workspaceFolder}/**"
+            ],
+            "browse": {
+                "path": [
+                    "${idf_path}/components",
+                    "${codeLib_path}",
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": false
+            }
+        }
+    ],
+    "version": 4
+}
