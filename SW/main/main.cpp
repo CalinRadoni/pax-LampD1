@@ -97,6 +97,13 @@ extern "C" {
             delay_ms(20);
         }
 
+        for (uint16_t i = 0; i < cfgLEDcount; ++i) {
+            stripL.SetPixel(i, 0);
+            stripR.SetPixel(i, 0);
+        }
+        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
+        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+
         step = 0;
         for(;;) {
             if (xQueueReceive(timers.timerQueue, &timerEvent, portMAX_DELAY) == pdPASS) {
