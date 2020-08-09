@@ -37,8 +37,6 @@ const uint8_t queueLength = 8;
 
 extern const uint8_t index_html_start[] asm("_binary_indexc_html_start");
 extern const uint8_t index_html_end[]   asm("_binary_indexc_html_end");
-extern const uint8_t jquery_js_start[] asm("_binary_jquery_js_start");
-extern const uint8_t jquery_js_end[]   asm("_binary_jquery_js_end");
 
 // -----------------------------------------------------------------------------
 
@@ -166,15 +164,10 @@ esp_err_t HTTPC2Server::HandleGetRequest(httpd_req_t* req)
         snprintf(buffer, bufferSize, "{\"status\":%d}\n", statusVal);
 
         httpd_resp_send(req, buffer, strnlen(buffer, bufferSize));
+        return ESP_OK;
     }
-    else {
-        if (strcmp(req->uri, "/jquery.js") == 0) {
-            httpd_resp_send(req, (const char *)jquery_js_start, jquery_js_end - jquery_js_start);
-        }
-        else {
-            httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
-        }
-    }
+
+    httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
     return ESP_OK;
 }
 
@@ -221,9 +214,6 @@ esp_err_t HTTPC2Server::HandleCmdJson(httpd_req_t* req)
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
     httpd_resp_sendstr(req, "OK");
 
-    // ESP_LOGI(TAG, "JSON Command: %s", buffer);
-    // ESP_LOGI(TAG, "JSON Command: %d, data: %08x", cmd.command, cmd.data);
-
     if (serverQueue != 0) {
         xQueueSendToBack(serverQueue, &cmd, (TickType_t)0);
     }
@@ -254,53 +244,6 @@ esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
 
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
     return ESP_FAIL;
-
-/*
-    size_t webCmdLen  = httpd_req_get_hdr_value_len(req, "X-User-Cmd");
-    size_t webDataLen = httpd_req_get_hdr_value_len(req, "X-User-Data");
-
-    const size_t maxHeaderLen = 10;
-    char headerStr[maxHeaderLen + 1];
-    HTTPCommand cmd;
-
-    if (webCmdLen == 0 || webCmdLen > 9) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "X-User-Cmd");
-        return ESP_FAIL;
-    }
-    if (webDataLen == 0 || webDataLen > 9) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "X-User-Data");
-        return ESP_FAIL;
-    }
-
-    err = httpd_req_get_hdr_value_str(req, "X-User-Cmd", headerStr, maxHeaderLen);
-    if (err != ESP_OK) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "X-User-Cmd");
-        return ESP_FAIL;
-    }
-    headerStr[maxHeaderLen] = 0;
-    cmd.command = (uint8_t) strtoul(headerStr, nullptr, 10);
-
-    err = httpd_req_get_hdr_value_str(req, "X-User-Data", headerStr, maxHeaderLen);
-    if (err != ESP_OK) {
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "X-User-Data");
-        return ESP_FAIL;
-    }
-    headerStr[maxHeaderLen] = 0;
-    cmd.data = (uint32_t) strtoul(headerStr, nullptr, 16);
-
-    ESP_LOGI(TAG, "Command: %d, data: %08x", cmd.command, cmd.data);
-
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    httpd_resp_set_hdr(req, "Pragma", "no-cache");
-    httpd_resp_sendstr(req, "{\"status\":0}");
-
-    if (serverQueue != 0) {
-        xQueueSendToBack(serverQueue, &cmd, (TickType_t)0);
-    }
-
-    return ESP_OK;
-*/
 }
 
 esp_err_t HTTPC2Server::HandleOTA(httpd_req_t* req)

@@ -4,24 +4,27 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <style>
-* { box-sizing: border-box; }
-.tab { overflow: hidden; border: 1px solid #ccc; background-color: #eee; }
+* { box-sizing: border-box; margin: 0; padding: 0 }
+body { margin: 0 auto; max-width: 1024px }
+h3 { padding-bottom: 0.5em }
+.title { background-color: #6495ed; color: #fff; padding: 1em }
+.tab { overflow: hidden; background-color: #eee; color: #222 }
 .tab button {
  float: left; border: none; outline: none;
  background-color: inherit; cursor: pointer; transition: 0.3s;
  font-size: 1em; padding: 1em 1rem;
 }
-.tab button:hover { background-color: #ddd; }
-.tab button.active { background-color: #ccc; }
-.tabBody { display: none; padding: 0.5rem 1rem; border: 1px solid #ccc; border-top: none; }
-.btnr:after { content: ""; display: table; clear: both; }
+.tab button:hover { background-color: #ccc }
+.tab button.active { background-color: #6495ed; color: #fff }
+.tabBody { display: none; padding: 1rem }
+.btnr:after { content: ""; display: table; clear: both }
 .btnc {
  border: none; color: black;
  cursor: pointer;
  float: left; width: 16.66%; height: 3rem;
 }
 </style>
-<script src="jquery.js"></script>
+<!--<script src="jquery.js"></script>-->
 <script>
 function openTab(evt, tabID) {
  var i, tabBody, tabLink;
@@ -57,6 +60,7 @@ function PClick(cdiv) {
  document.getElementById('CCode').value = cdiv.getAttribute("name");
  SendCmd(1);
 }
+function ResetBoard() { SendCmd(0xFE); }
 
 var nRGB = ["800000","804000","808000","408000","008000","008040","008080","004080","000080","400080","800080","800040"];
 var nRYB = ["7F1208","7F2F05","7C4B01","7F660C","7F7F19","596B18","325718","1A3E4C","01227F","22126B","440159","600A2F"];
@@ -105,24 +109,24 @@ function UpFW() {
  xhr.send(f);
 }
 
-function ResetBoard() { SendCmd(0xFE); }
-
-$(document).ready(function() {
+function Init() {
  CreateSmallColorWheel(0, 'pRGB');
  CreateSmallColorWheel(1, 'pRYB');
-});
+}
 </script>
 <title>pax-LampD1</title>
 </head>
-<body>
+<body onload="Init();">
+ <div class="title">
+  <h1>pax-LampD1</h1>
+ </div>
  <div class="tab">
-  <button class="tabLink" onclick="openTab(event, 'TH')">Home</button>
+  <button class="tabLink active" onclick="openTab(event, 'TH')">Home</button>
   <button class="tabLink" onclick="openTab(event, 'TP')">Colors</button>
-  <button class="tabLink" onclick="openTab(event, 'TC')">Custom</button>
   <button class="tabLink" onclick="openTab(event, 'TS')">Settings</button>
  </div>
- <div id="TH" class="tabBody active" style="display: block;">
-  <h3>Enter color code in hex</h3><br/>
+ <div id="TH" class="tabBody" style="display: block;">
+  <h3>Enter color code in hex</h3>
   <input id="CCode" type="text" value="" maxlength="8" size="8">&nbsp;
   <input type="button" value="Set" onclick="SetColor()" />&nbsp;
   <input type="button" value="Off" onclick="TurnOff()" />
@@ -133,7 +137,6 @@ $(document).ready(function() {
   <h3>RGB</h3><div id="pRGB"></div><br/>
   <h3>RYB</h3><div id="pRYB"></div>
  </div>
- <div id="TC" class="tabBody"></div>
  <div id="TS" class="tabBody">
   <h3>Firmware</h3>
   <input type="file" id="fwf" accept=".bin" style="display:none" onchange="swfC(this)" />
