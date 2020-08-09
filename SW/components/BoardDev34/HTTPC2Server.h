@@ -53,6 +53,7 @@ private:
 
     esp_err_t HandleGetRequest(httpd_req_t*);
     esp_err_t HandlePostRequest(httpd_req_t*);
+    esp_err_t HandleCmdJson(httpd_req_t*);
     esp_err_t HandleOTA(httpd_req_t*);
 
     bool working;

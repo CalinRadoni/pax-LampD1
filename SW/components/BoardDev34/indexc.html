@@ -23,39 +23,39 @@
 </style>
 <script src="jquery.js"></script>
 <script>
-function openTab(evt, cityName) {
+function openTab(evt, tabID) {
  var i, tabBody, tabLink;
  tabBody = document.getElementsByClassName('tabBody');
  for (i = 0; i < tabBody.length; i++) { tabBody[i].style.display = "none"; }
  tabLink = document.getElementsByClassName('tabLink');
  for (i = 0; i < tabLink.length; i++) { tabLink[i].className = tabLink[i].className.replace(" active", ""); }
- document.getElementById(cityName).style.display = "block";
+ document.getElementById(tabID).style.display = "block";
  evt.currentTarget.className += " active";
 }
 
-function PostPOST(cmdID) {
- var userData = $("#CCode").val();
- if (!userData) userData = 0;
+function SendCmd(cmdID) {
+ var ii = document.getElementById('sTxt');
+ var cmdData = document.getElementById('CCode').value;
+ var xhr = new XMLHttpRequest();
 
-      if (cmdID == 0) { $("#sTxt").text("Turn off ..."); }
- else if (cmdID == 1) { $("#sTxt").text("Set color ..."); }
- else                 { $("#sTxt").text(""); }
+ xhr.onload = function() {
+  if (xhr.readyState === xhr.DONE) {
+   if (xhr.status === 200) { ii.innerHTML = xhr.responseText; }
+  }
+ }
+ xhr.onerror = function() { ii.innerHTML = "Send error"; }
+ xhr.onabort = function() { ii.innerHTML = "Send canceled"; }
 
- var qurl = "/do.json";
-
- $.ajax({
-  url: qurl, dataType: "json", method: "POST", cache: false,
-  headers: { "X-User-Cmd": cmdID, "X-User-Data": userData },
-  data: { "id":cmdID }
- })
- .fail(function(xhr, status, error) { $("#sTxt").text(xhr.statusText); });
+ xhr.open("POST", "/cmd.json", true);
+ xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+ xhr.send(JSON.stringify({ "cmd": cmdID, "data": cmdData }));
 }
 
-function SetColor() { PostPOST(1); }
-function TurnOff()  { PostPOST(0); }
+function SetColor() { SendCmd(1); }
+function TurnOff()  { SendCmd(0); }
 function PClick(cdiv) {
  document.getElementById('CCode').value = cdiv.getAttribute("name");
- PostPOST(1);
+ SendCmd(1);
 }
 
 var nRGB = ["800000","804000","808000","408000","008000","008040","008080","004080","000080","400080","800080","800040"];
@@ -88,24 +88,24 @@ function UpFW() {
  if (!f) return;
  var ii = document.getElementById('swi');
 
- var xhttp = new XMLHttpRequest();
- xhttp.onreadystatechange = function() {
-  if (xhttp.readyState == 4) {
-   if (xhttp.status == 200) { ii.innerHTML = xhttp.responseText; }
-   else { ii.innerHTML = "Error " + xhttp.status + " " + xhttp.responseText; }
+ var xhr = new XMLHttpRequest();
+ xhr.onreadystatechange = function() {
+  if (xhr.readyState === xhr.DONE) {
+   if (xhr.status === 200) { ii.innerHTML = xhr.responseText; }
+   else { ii.innerHTML = "Error " + xhr.status + " " + xhr.responseText; }
   }
  }
- xhttp.upload.addEventListener("progress", function(ev) {
+ xhr.upload.addEventListener("progress", function(ev) {
   if (ev.lengthComputable) {
    var percent = 100 * ev.loaded / ev.total | 0;
    ii.innerHTML = percent + "%";
   }
  });
- xhttp.open("POST", "/upfw", true);
- xhttp.send(f);
+ xhr.open("POST", "/upfw", true);
+ xhr.send(f);
 }
 
-function ResetBoard() { PostPOST(0xFE); }
+function ResetBoard() { SendCmd(0xFE); }
 
 $(document).ready(function() {
  CreateSmallColorWheel(0, 'pRGB');

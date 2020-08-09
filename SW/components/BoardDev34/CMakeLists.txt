@@ -9,6 +9,7 @@ set(c_PRIVATE_REQUIREMENTS
     Debouncer
     ESP32SimpleOTA
     esp_http_server
+    json
 )
 
 set(c_EMBED_FILES

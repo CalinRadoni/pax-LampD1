@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "freertos/FreeRTOS.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_system.h"
 
 #include <string.h>
 
-#include "esp_system.h"
+#include "cJSON.h"
 
 #include "HTTPC2Server.h"
 
@@ -177,6 +178,59 @@ esp_err_t HTTPC2Server::HandleGetRequest(httpd_req_t* req)
     return ESP_OK;
 }
 
+esp_err_t HTTPC2Server::HandleCmdJson(httpd_req_t* req)
+{
+    int totalLen = req->content_len;
+    int curLen = 0;
+    const uint8_t maxBufLen = 250;
+    char buffer[maxBufLen];
+    int recLen = 0;
+
+    if (totalLen >= maxBufLen) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "content too long");
+        return ESP_FAIL;
+    }
+    while (curLen < totalLen) {
+        recLen = httpd_req_recv(req, &buffer[curLen], totalLen);
+        if (recLen <= 0) {
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "failed to receive data");
+            return ESP_FAIL;
+        }
+        curLen += recLen;
+    }
+    buffer[totalLen] = '\0';
+
+    HTTPCommand cmd;
+    cmd.command = 0;
+    cmd.data = 0;
+
+    cJSON *root = cJSON_Parse(buffer);
+    if (root != nullptr) {
+        cJSON *item;
+        item = cJSON_GetObjectItem(root, "cmd");
+        if (item != nullptr)
+            cmd.command = (uint8_t)item->valueint;
+        item = cJSON_GetObjectItem(root, "data");
+        if (item != nullptr)
+            cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 16);
+        cJSON_Delete(root);
+    }
+
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    httpd_resp_sendstr(req, "OK");
+
+    // ESP_LOGI(TAG, "JSON Command: %s", buffer);
+    // ESP_LOGI(TAG, "JSON Command: %d, data: %08x", cmd.command, cmd.data);
+
+    if (serverQueue != 0) {
+        xQueueSendToBack(serverQueue, &cmd, (TickType_t)0);
+    }
+
+    return ESP_OK;
+}
+
 esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
@@ -194,17 +248,20 @@ esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
         return err;
     }
 
-    if (strcmp(req->uri, "/do.json") != 0) {
-        // page not found
-        httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
-        return ESP_FAIL;
+    if (strcmp(req->uri, "/cmd.json") == 0) {
+        return HandleCmdJson(req);
     }
 
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
+    return ESP_FAIL;
+
+/*
     size_t webCmdLen  = httpd_req_get_hdr_value_len(req, "X-User-Cmd");
     size_t webDataLen = httpd_req_get_hdr_value_len(req, "X-User-Data");
 
     const size_t maxHeaderLen = 10;
     char headerStr[maxHeaderLen + 1];
+    HTTPCommand cmd;
 
     if (webCmdLen == 0 || webCmdLen > 9) {
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "X-User-Cmd");
@@ -214,8 +271,6 @@ esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
         httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "X-User-Data");
         return ESP_FAIL;
     }
-
-    HTTPCommand cmd;
 
     err = httpd_req_get_hdr_value_str(req, "X-User-Cmd", headerStr, maxHeaderLen);
     if (err != ESP_OK) {
@@ -245,6 +300,7 @@ esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
     }
 
     return ESP_OK;
+*/
 }
 
 esp_err_t HTTPC2Server::HandleOTA(httpd_req_t* req)
