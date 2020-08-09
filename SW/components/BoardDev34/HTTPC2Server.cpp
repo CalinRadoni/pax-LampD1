@@ -35,8 +35,8 @@ static const char* TAG = "HTTPC2Srv";
 
 const uint8_t queueLength = 8;
 
-extern const uint8_t index_html_start[] asm("_binary_indexc_html_start");
-extern const uint8_t index_html_end[]   asm("_binary_indexc_html_end");
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 
 // -----------------------------------------------------------------------------
 

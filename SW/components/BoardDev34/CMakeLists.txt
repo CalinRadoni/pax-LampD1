@@ -13,7 +13,7 @@ set(c_PRIVATE_REQUIREMENTS
 )
 
 set(c_EMBED_FILES
-    "indexc.html"
+    "index.html"
 )
 
 idf_component_register(
