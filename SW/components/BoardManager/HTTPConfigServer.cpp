@@ -33,8 +33,8 @@ HTTPConfigServer theHTTPConfigServer;
 
 static const char* TAG = "HTTPCfgSrv";
 
-extern const uint8_t index_html_start[] asm("_binary_index_html_start");
-extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
+extern const uint8_t index_html_start[] asm("_binary_indexo_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_indexo_html_end");
 extern const uint8_t jquery_js_start[] asm("_binary_jquery_js_start");
 extern const uint8_t jquery_js_end[]   asm("_binary_jquery_js_end");
 

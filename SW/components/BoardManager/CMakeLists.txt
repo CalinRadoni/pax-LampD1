@@ -13,7 +13,7 @@ set(c_PRIVATE_REQUIREMENTS
 )
 
 set(c_EMBED_FILES
-    "index.html"
+    "indexo.html"
     "jquery.js"
 )
 
