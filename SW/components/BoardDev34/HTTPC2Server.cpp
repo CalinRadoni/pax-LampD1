@@ -163,12 +163,10 @@ esp_err_t HTTPC2Server::HandleGetRequest(httpd_req_t* req)
         uint8_t statusVal = 0;
         snprintf(buffer, bufferSize, "{\"status\":%d}\n", statusVal);
 
-        httpd_resp_send(req, buffer, strnlen(buffer, bufferSize));
-        return ESP_OK;
+        return httpd_resp_send(req, buffer, strnlen(buffer, bufferSize));
     }
 
-    httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
-    return ESP_OK;
+    return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
 }
 
 esp_err_t HTTPC2Server::HandleCmdJson(httpd_req_t* req)
@@ -212,7 +210,7 @@ esp_err_t HTTPC2Server::HandleCmdJson(httpd_req_t* req)
     httpd_resp_set_type(req, "text/plain");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
-    httpd_resp_sendstr(req, "OK");
+    httpd_resp_sendstr(req, "Command processed");
 
     if (serverQueue != 0) {
         xQueueSendToBack(serverQueue, &cmd, (TickType_t)0);
