@@ -36,21 +36,35 @@ function openTab(evt, tabID) {
 }
 
 function SendCmd(cmdID) {
- var ii = document.getElementById('sTxt');
- var cmdData = document.getElementById('CCode').value;
+ var ii;
+ if (cmdID == 0xF0 || cmdID == 0xF1) { ii = document.getElementById('csi'); }
+ else { ii = document.getElementById('sTxt'); }
+
  var xhr = new XMLHttpRequest();
 
  xhr.onload = function() {
   if (xhr.readyState === xhr.DONE) {
    if (xhr.status === 200) { ii.innerHTML = xhr.responseText; }
+   else { ii.innerHTML = "Error " + xhr.status + " " + xhr.responseText; }
   }
  }
  xhr.onerror = function() { ii.innerHTML = "Send error"; }
  xhr.onabort = function() { ii.innerHTML = "Send canceled"; }
 
+ var str;
+ if (cmdID == 0xF0 || cmdID == 0xF1) {
+  var ssid = document.getElementById('SSID').value;
+  var pass = document.getElementById('PASS').value;
+  str = JSON.stringify({ "cmd": cmdID, "ssid": ssid, "pass": pass });
+ }
+ else {
+  var data = document.getElementById('CCode').value;
+  str = JSON.stringify({ "cmd": cmdID, "data": data });
+ }
+
  xhr.open("POST", "/cmd.json", true);
  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
- xhr.send(JSON.stringify({ "cmd": cmdID, "data": cmdData }));
+ xhr.send(str);
 }
 
 function SetColor() { SendCmd(1); }
@@ -142,8 +156,15 @@ function Init() {
   <input type="button" value="Select firmware file" onclick="document.getElementById('fwf').click();" /> &gt;&gt;
   <input type="button" value="Upload firmware" onclick="UpFW()" /> &gt;&gt;
   <input type="button" value="Reset" onclick="ResetBoard()" /><br/>
-  <div id="swf"></div><br/>
-  <div id="swi"></div>
+  <span id="swf"></span><br/>
+  <span id="swi"></span>
+  <br/>
+  <h3>Credentials</h3>
+  SSID: <input id="SSID" type="text" value=""><br/>
+  Pass: <input id="PASS" type="password" value=""><br/>
+  <input type="button" value="Save for AP1" onclick="SendCmd(0xF0)" />&nbsp;<input type="button" value="Save for AP2" onclick="SendCmd(0xF1)" /><br/>
+  <span id="csi"></span>
+  <br/>
  </div>
 </body>
 </html>

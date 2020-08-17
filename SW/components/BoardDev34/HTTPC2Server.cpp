@@ -199,11 +199,32 @@ esp_err_t HTTPC2Server::HandleCmdJson(httpd_req_t* req)
     if (root != nullptr) {
         cJSON *item;
         item = cJSON_GetObjectItem(root, "cmd");
-        if (item != nullptr)
+        if (item != nullptr) {
             cmd.command = (uint8_t)item->valueint;
-        item = cJSON_GetObjectItem(root, "data");
-        if (item != nullptr)
-            cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 16);
+        }
+        switch (cmd.command) {
+        case 0x00:
+        case 0x01:
+            item = cJSON_GetObjectItem(root, "data");
+            if (item != nullptr)
+                cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 16);
+            break;
+        case 0xF0:
+        case 0xF1:
+            // save AP command
+            item = cJSON_GetObjectItem(root, "ssid");
+            if (item != nullptr)
+                strcpy (ssid, item->valuestring);
+            item = cJSON_GetObjectItem(root, "pass");
+            if (item != nullptr)
+                strcpy (pass, item->valuestring);
+            break;
+        case 0xFE:
+            // reset command, no parameters
+            break;
+        default:
+            break;
+        }
         cJSON_Delete(root);
     }
 
@@ -238,6 +259,10 @@ esp_err_t HTTPC2Server::HandlePostRequest(httpd_req_t* req)
 
     if (strcmp(req->uri, "/cmd.json") == 0) {
         return HandleCmdJson(req);
+    }
+
+    if (strcmp(req->uri, "/save.json") == 0) {
+        return SaveAP(req);
     }
 
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
