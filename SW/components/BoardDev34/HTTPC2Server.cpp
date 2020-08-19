@@ -55,7 +55,7 @@ static esp_err_t request_handler(httpd_req_t *req)
 
 // -----------------------------------------------------------------------------
 
-HTTPC2Server::HTTPC2Server(void)
+HTTPC2Server::HTTPC2Server()
 {
     serverQueue = 0;
     serverHandle = nullptr;
@@ -139,13 +139,13 @@ esp_err_t HTTPC2Server::HandleRequest(httpd_req_t* req)
     }
 
     switch (req->method) {
-        case HTTP_GET:
-            return HandleGetRequest(req);
-        case HTTP_POST:
-            return HandlePostRequest(req);
-        default:
-            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not implemented");
-            return ESP_FAIL;
+    case HTTP_GET:
+        return HandleGetRequest(req);
+    case HTTP_POST:
+        return HandlePostRequest(req);
+    default:
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not implemented");
+        return ESP_FAIL;
     }
 }
 

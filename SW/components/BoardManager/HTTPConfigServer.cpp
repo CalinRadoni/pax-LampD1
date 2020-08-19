@@ -20,73 +20,68 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "freertos/FreeRTOS.h"
 #include "esp_err.h"
 #include "esp_log.h"
+#include "esp_system.h"
 
 #include <string.h>
 
-#include "esp_system.h"
-
 #include "HTTPConfigServer.h"
+
+#include "cJSON.h"
+#include "ESP32SimpleOTA.h"
 
 // -----------------------------------------------------------------------------
 
-HTTPConfigServer theHTTPConfigServer;
+static const char* TAG = "PaxHttpSrv";
 
-static const char* TAG = "HTTPCfgSrv";
+const uint8_t queueLength = 8;
 
-extern const uint8_t index_html_start[] asm("_binary_indexo_html_start");
-extern const uint8_t index_html_end[]   asm("_binary_indexo_html_end");
-extern const uint8_t jquery_js_start[] asm("_binary_jquery_js_start");
-extern const uint8_t jquery_js_end[]   asm("_binary_jquery_js_end");
+extern const uint8_t index_html_start[] asm("_binary_index_html_start");
+extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
 
 // -----------------------------------------------------------------------------
 
 static esp_err_t request_handler(httpd_req_t *req)
 {
-    if (req == nullptr)
-        return ESP_FAIL;
+    if (req == nullptr) return ESP_FAIL;
 
-    HTTPConfigServer* server = (HTTPConfigServer *) req->user_ctx;
-    if (server == nullptr)
+    PaxHttpServer* server = (PaxHttpServer *) req->user_ctx;
+    if (server == nullptr) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "user_ctx is nullptr");
         return ESP_FAIL;
+    }
 
     return server->HandleRequest(req);
 }
 
 // -----------------------------------------------------------------------------
 
-HTTPConfigServer::HTTPConfigServer(void)
+PaxHttpServer::PaxHttpServer(void)
 {
-    events = NULL;
+    serverQueue = 0;
     serverHandle = nullptr;
-
-    SSID[0] = 0;
-    PASS[0] = 0;
-
-    credentialsReceived = false;
-    checkThem = false;
-    saveThem = false;
-
-    credentialsState = CredentialsState::notSet;
-    credentialsSaveState = CredentialsSaveState::notSet;
-
     working = false;
+
+//    SSID[0] = 0;
+//    PASS[0] = 0;
 }
 
-HTTPConfigServer::~HTTPConfigServer(void)
+PaxHttpServer::~PaxHttpServer()
 {
     StopServer();
 }
 
-esp_err_t HTTPConfigServer::StartServer(void)
+esp_err_t PaxHttpServer::StartServer(void)
 {
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-
-    credentialsReceived = false;
-    checkThem = false;
-    saveThem = false;
-
     if (serverHandle != nullptr)
         StopServer();
+
+    serverQueue = xQueueCreate(queueLength, sizeof(HTTPCommand));
+    if (serverQueue == 0) {
+        ESP_LOGE(TAG, "xQueueCreate");
+        return ESP_FAIL;
+    }
+
+    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
     config.uri_match_fn = httpd_uri_match_wildcard;
 
@@ -121,7 +116,7 @@ esp_err_t HTTPConfigServer::StartServer(void)
     return err;
 }
 
-void HTTPConfigServer::StopServer(void)
+void PaxHttpServer::StopServer(void)
 {
     if (serverHandle == nullptr) return;
 
@@ -129,151 +124,222 @@ void HTTPConfigServer::StopServer(void)
 
     httpd_stop(serverHandle);
     serverHandle = nullptr;
+
+    if (serverQueue != 0) {
+        vQueueDelete(serverQueue);
+        serverQueue = 0;
+    }
 }
 
-esp_err_t HTTPConfigServer::HandleRequest(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandleRequest(httpd_req_t* req)
 {
-    esp_err_t res = ESP_FAIL;
+    if (req == nullptr) return ESP_FAIL;
 
-    if (!working)
-        return res;
-
-    if (req == nullptr)
-        return res;
+    if (!working) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Not working");
+        return ESP_FAIL;
+    }
 
     switch (req->method) {
-        case HTTP_GET:
-            res = HandleGetRequest(req);
-            break;
-        case HTTP_POST:
-            res = HandlePostRequest(req);
-            break;
-        default:
-            break;
+    case HTTP_GET:
+        return HandleGetRequest(req);
+    case HTTP_POST:
+        return HandlePostRequest(req);
+    default:
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Method not implemented");
+        return ESP_FAIL;
     }
-
-    return res;
 }
 
-void HTTPConfigServer::SendMainPage(httpd_req_t* req)
-{
-    httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
-}
-
-esp_err_t HTTPConfigServer::HandleGetRequest(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
-
-    ESP_LOGI(TAG, "GET: %s", req->uri);
 
     if (strcmp(req->uri, "/status.json") == 0) {
-        httpd_resp_set_type(req, "application/json");
-        httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-        httpd_resp_set_hdr(req, "Pragma", "no-cache");
-
-        const uint8_t bufferSize = 16;
-        char buffer[bufferSize];
-        uint8_t statusVal = 0;
-        if (credentialsSaveState != CredentialsSaveState::notSet) {
-            switch (credentialsSaveState) {
-                case CredentialsSaveState::saved:       statusVal = 1; break;
-                case CredentialsSaveState::saveRestart: statusVal = 2; break;
-                case CredentialsSaveState::saveError:   statusVal = 3; break;
-                default: statusVal = 0; break;
-            }
-        }
-        else {
-            switch (credentialsState) {
-                case CredentialsState::checking:        statusVal = 4; break;
-                case CredentialsState::invalidSSID:     statusVal = 5; break;
-                case CredentialsState::invalidPass:     statusVal = 6; break;
-                case CredentialsState::processingError: statusVal = 7; break;
-                case CredentialsState::checkFail:       statusVal = 8; break;
-                case CredentialsState::checkSuccess:    statusVal = 9; break;
-                case CredentialsState::checkTimeout:    statusVal = 10; break;
-                default: statusVal = 0; break;
-            }
-        }
-        snprintf(buffer, bufferSize, "{\"status\":%d}\n", statusVal);
-
-        httpd_resp_send(req, buffer, strnlen(buffer, bufferSize));
-        return ESP_OK;
+        return HandleGet_StatusJson(req);
     }
 
-    if (strcmp(req->uri, "/jquery.js") == 0) {
-        httpd_resp_send(req, (const char *)jquery_js_start, jquery_js_end - jquery_js_start);
-        return ESP_OK;
+    if (strcmp(req->uri, "/config.json") == 0) {
+        return HandlePage_ConfigJson(req);
     }
 
-    SendMainPage(req);
-    return ESP_OK;
+    if (strcmp(req->uri, "index.html") == 0) {
+        return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
+    }
+
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
+    return ESP_FAIL;
 }
 
-esp_err_t HTTPConfigServer::HandlePostRequest(httpd_req_t* req)
+virtual void SetJsonHeader(httpd_req_t* req)
 {
-    if (req == nullptr) return ESP_FAIL;
-
-    credentialsState     = CredentialsState::checking;
-    credentialsSaveState = CredentialsSaveState::notSet;
-
-    credentialsReceived = false;
-    checkThem = false;
-    saveThem = false;
-
-    if (strcmp(req->uri, "/check.json") == 0) {
-        ESP_LOGI(TAG, "check.json");
-        checkThem = true;
-    }
-    else if (strcmp(req->uri, "/save.json") == 0) {
-        ESP_LOGI(TAG, "save.json");
-        saveThem = true;
-    }
-    else{
-        // page not found
-        credentialsState = CredentialsState::processingError;
-        httpd_resp_send_404(req);
-        return ESP_FAIL;
-    }
-
-    size_t lenSSID = httpd_req_get_hdr_value_len(req, "X-User-SSID");
-    size_t lenPass = httpd_req_get_hdr_value_len(req, "X-User-PASS");
-
-    if (lenSSID == 0 || lenSSID > 31) {
-        credentialsState = CredentialsState::invalidSSID;
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid SSID data");
-        return ESP_FAIL;
-    }
-    if (lenPass < 7 || lenPass > 63) {
-        credentialsState = CredentialsState::invalidPass;
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid Password data");
-        return ESP_FAIL;
-    }
-
-    memset(SSID, 0, 32);
-    memset(PASS, 0, 64);
-
-    esp_err_t err;
-    err = httpd_req_get_hdr_value_str(req, "X-User-SSID", SSID, 32);
-    if (err != ESP_OK) {
-        credentialsState = CredentialsState::processingError;
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "SSID");
-        return ESP_FAIL;
-    }
-    err = httpd_req_get_hdr_value_str(req, "X-User-PASS", PASS, 64);
-    if (err != ESP_OK) {
-        credentialsState = CredentialsState::processingError;
-        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Password");
-        return ESP_FAIL;
-    }
-
-    credentialsReceived = true;
-
-    if (events != nullptr)
-        events->SetBits(xBitCredentialsReceived);
-
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
-    httpd_resp_sendstr(req, "{\"status\":0}");
+}
+
+esp_err_t HandleGet_StatusJson(httpd_req_t* req)
+{
+    SetJsonHeader(res);
+
+    uint8_t statusVal = 0;
+    snprintf(workBuffer, workBufferSize, "{\"status\":%d}\n", statusVal);
+
+    return httpd_resp_send(req, workBuffer, strnlen(workBuffer, workBufferSize));
+}
+
+esp_err_t HandleGet_ConfigJson(httpd_req_t* req)
+{
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
+    return ESP_FAIL;
+}
+
+esp_err_t PaxHttpServer::HandlePostRequest(httpd_req_t* req)
+{
+    if (req == nullptr) return ESP_FAIL;
+
+    if (strcmp(req->uri, "/cmd.json") == 0) {
+        return HandlePost_CmdJson(req);
+    }
+
+    if (strcmp(req->uri, "/config.json") == 0) {
+        return HandlePost_ConfigJson(req);
+    }
+
+    if (strcmp(req->uri, "/upfw") == 0) {
+        esp_err_t err = HandleOTA(req);
+        if (err == ESP_OK) {
+            httpd_resp_sendstr(req, "OTA OK.");
+        }
+        else {
+            httpd_resp_sendstr(req, "OTA Failed !");
+        }
+        return err;
+    }
+
+    httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
+    return ESP_FAIL;
+}
+
+esp_err_t HandlePost_CmdJson(httpd_req_t* req)
+{
+    int totalLen = req->content_len;
+    int curLen = 0;
+    int recLen = 0;
+
+    if (totalLen >= workBufferSize) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "cmd content too long");
+        return ESP_FAIL;
+    }
+    while (curLen < totalLen) {
+        recLen = httpd_req_recv(req, &workBuffer[curLen], totalLen - curLen);
+        if (recLen <= 0) {
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "failed to receive data");
+            return ESP_FAIL;
+        }
+        curLen += recLen;
+    }
+    workBuffer[totalLen] = '\0';
+
+    HTTPCommand cmd;
+    cmd.command = 0;
+    cmd.data = 0;
+
+    cJSON *root = cJSON_Parse(buffer);
+    if (root != nullptr) {
+        cJSON *item;
+        item = cJSON_GetObjectItem(root, "cmd");
+        if (item != nullptr) {
+            cmd.command = (uint8_t)item->valueint;
+        }
+        item = cJSON_GetObjectItem(root, "data");
+        if (item != nullptr) {
+            cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 16);
+        }
+
+        cJSON_Delete(root);
+        root = nullptr;
+    }
+
+    httpd_resp_set_type(req, "text/plain");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    httpd_resp_set_hdr(req, "Pragma", "no-cache");
+
+    if (cmd.command == 0) {
+        httpd_resp_sendstr(req, "Command ignored");
+        return ESP_FAIL;
+    }
+
+    httpd_resp_sendstr(req, "Command processed");
+
+    if (serverQueue != 0) {
+        xQueueSendToBack(serverQueue, &cmd, (TickType_t)0);
+    }
+
     return ESP_OK;
+}
+
+esp_err_t HandlePost_ConfigJson(httpd_req_t* req)
+{
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
+    return ESP_FAIL;
+}
+
+esp_err_t PaxHttpServer::HandleOTA(httpd_req_t* req)
+{
+    const size_t buffSize = 1024;
+    char buff[buffSize];
+    int pageLen = req->content_len;
+    int rxLen;
+    bool headerReceived = false;
+    bool done = false;
+    esp_err_t result = ESP_OK;
+
+    if (pageLen > simpleOTA.GetMaxImageSize()) {
+        ESP_LOGE(TAG, "OTA content is too big (%d bytes) !", pageLen);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "OTA content is too big !");
+        return ESP_FAIL;
+    }
+
+    while (!done) {
+        size_t reqLen = pageLen > buffSize ? buffSize : pageLen;
+        rxLen = httpd_req_recv(req, buff, reqLen);
+        if (rxLen < 0) {
+            if (rxLen != HTTPD_SOCK_ERR_TIMEOUT) {
+                ESP_LOGE(TAG, "httpd_req_recv: %d", rxLen);
+                return ESP_FAIL;
+            }
+        }
+        else if (rxLen == 0) {
+            done = true;
+        }
+        else { /* rxLen > 0 */
+            if (!headerReceived) {
+                headerReceived = true;
+
+                result = simpleOTA.Begin();
+                if (result != ESP_OK) { return result; }
+            }
+
+            result = simpleOTA.Write(buff, rxLen);
+            if (result != ESP_OK) { return result; }
+
+            if (pageLen > rxLen) {
+                pageLen -= rxLen;
+            }
+            else done = true;
+        }
+    }
+
+    if (!headerReceived) {
+        ESP_LOGE(TAG, "Firmware file - no data received");
+        return ESP_FAIL;
+    }
+
+    result = simpleOTA.End();
+    if (result != ESP_OK) { return result; }
+
+    ESP_LOGI(TAG, "OTA done, you should restart");
+
+    return result;
 }

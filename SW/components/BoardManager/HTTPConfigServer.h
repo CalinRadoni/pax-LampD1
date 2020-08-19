@@ -21,64 +21,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define HTTPConfigServer_H
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 #include "esp_http_server.h"
 
-#include "BoardEvents.h"
-
-enum class CredentialsState
+struct HTTPCommand
 {
-    notSet,
-    checking,
-    invalidSSID,
-    invalidPass,
-    processingError,
-    checkFail,
-    checkSuccess,
-    checkTimeout
+    uint8_t command;
+    uint32_t data;
 };
 
-enum class CredentialsSaveState
-{
-    notSet,
-    saved,
-    saveRestart,
-    saveError
-};
-
-class HTTPConfigServer
+class PaxHttpServer
 {
 public:
-    HTTPConfigServer(void);
-    virtual ~HTTPConfigServer(void);
+    PaxHttpServer(void);
+    virtual ~PaxHttpServer();
 
-    EventGroupHandler *events;
+    /**
+     * @brief The queue for timer events
+     *
+     * The queue is created by the StartServer function and destroyed by the StopServer function or on the destructor
+     */
+    QueueHandle_t serverQueue;
 
     esp_err_t StartServer(void);
     void StopServer(void);
 
     esp_err_t HandleRequest(httpd_req_t*);
 
-    char SSID[32];
-    char PASS[64];
-
-    bool credentialsReceived;
-    bool checkThem;
-    bool saveThem;
-
-    CredentialsState credentialsState;
-    CredentialsSaveState credentialsSaveState;
-
 private:
     httpd_handle_t serverHandle;
+    bool working;
+
+    const uint8_t workBufferSize = 251;
+    char workBuffer[workBufferSize];
 
     esp_err_t HandleGetRequest(httpd_req_t*);
     esp_err_t HandlePostRequest(httpd_req_t*);
 
-    bool working;
+    virtual void SetJsonHeader(httpd_req_t*);
+    virtual esp_err_t HandleGet_StatusJson(httpd_req_t*);
+    virtual esp_err_t HandleGet_ConfigJson(httpd_req_t*);
 
-    void SendMainPage(httpd_req_t* req);
+    virtual esp_err_t HandlePost_CmdJson(httpd_req_t*);
+    virtual esp_err_t HandlePost_ConfigJson(httpd_req_t*);
+    esp_err_t HandleOTA(httpd_req_t*);
 };
-
-extern HTTPConfigServer theHTTPConfigServer;
 
 #endif

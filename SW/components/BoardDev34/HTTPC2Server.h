@@ -24,17 +24,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "freertos/queue.h"
 #include "esp_http_server.h"
 
-struct HTTPCommand
-{
-    uint8_t command;
-    uint32_t data;
-};
-
 class HTTPC2Server
 {
 public:
     HTTPC2Server(void);
-    virtual ~HTTPC2Server(void);
+    virtual ~HTTPC2Server();
 
     /**
      * @brief The queue for timer events
