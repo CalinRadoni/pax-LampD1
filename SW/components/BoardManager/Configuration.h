@@ -23,21 +23,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "freertos/FreeRTOS.h"
 #include "tcpip_adapter.h"
 
-#include "WiFiConfig.h"
+const uint8_t MaxNameLen = 64;
+const uint8_t APConfigCnt = 3;
 
-const uint8_t WiFiConfigCount = 2;
+struct APConfig
+{
+    uint8_t SSID[32];
+    uint8_t Pass[64];
+};
 
 class Configuration
 {
 public:
     Configuration(void);
-    ~Configuration(void);
+    virtual ~Configuration();
 
-    // TODO: nodeName should be implemented
     uint32_t version;
-    WiFiConfig wcfg[WiFiConfigCount];
-    // TODO: Static IP not implemented !
-    // TODO: There should be ipInfo for each WiFiConfig !
+    char name[MaxNameLen];
+    APConfig apCfg[APConfigCnt];
     tcpip_adapter_ip_info_t ipInfo;
 
     esp_err_t InitializeNVS(void);

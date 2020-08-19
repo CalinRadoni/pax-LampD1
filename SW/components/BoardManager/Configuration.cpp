@@ -36,7 +36,7 @@ Configuration configuration;
 static const char* TAG = "Configuration";
 
 const uint32_t ConfigurationVersion = 1;
-const char* ConfigNVS = "DevXX-Config";
+const char* ConfigNVS = "pax-config";
 
 // -----------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ Configuration::Configuration(void)
     InitData();
 }
 
-Configuration::~Configuration(void)
+Configuration::~Configuration()
 {
     //
 }
@@ -72,9 +72,11 @@ esp_err_t Configuration::InitializeNVS(void)
 void Configuration::InitData(void)
 {
     version = ConfigurationVersion;
+    memset(name, 0, MaxNameLen);
 
-    for (uint8_t i = 0; i < WiFiConfigCount; i++) {
-        wcfg[i].Initialize();
+    for (uint8_t i = 0; i < APConfigCnt; ++i) {
+        memset(apCfg[i].SSID, 0, 32);
+        memset(apCfg[i].Pass, 0, 64);
     }
 
     ipInfo.ip.addr = 0;

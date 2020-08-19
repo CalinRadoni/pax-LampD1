@@ -17,8 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef HTTPConfigServer_H
-#define HTTPConfigServer_H
+#ifndef pax_http_server_H
+#define pax_http_server_H
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

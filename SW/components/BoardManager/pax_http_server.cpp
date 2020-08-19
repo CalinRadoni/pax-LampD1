@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string.h>
 
-#include "HTTPConfigServer.h"
+#include "pax_http_server.h"
 
 #include "cJSON.h"
 #include "ESP32SimpleOTA.h"
