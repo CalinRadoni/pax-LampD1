@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "WiFiConfig.h"
 
-enum WiFiManagerStatus {
+enum class WiFiManagerStatus {
     idle,
     staConnecting, staConnected, staDisconnected,
     apCreated,
@@ -33,7 +33,7 @@ enum WiFiManagerStatus {
     error
 };
 
-enum WiFiManagerMode {
+enum class WiFiManagerMode {
     none, station, ap, apsta, scan
 };
 
@@ -55,12 +55,12 @@ public:
     esp_err_t Clean(void);
 
     /**
-     * @brief Starts the WiFi in the supplied mode
+     * @brief Starts the WiFi in the requested mode
      *
-     * Starte the Wifi in one of the modes:
+     * Starts the WiFi in one of the modes:
      *    * station
      *    * ap
-     *    * apsta
+     *    * ap + station
      *    * scan
      *
      * NO checks are made to stop the current mode !
@@ -85,7 +85,7 @@ public:
      *
      * @param  initMode one of WiFiManagerMode types
      * @param  SSID     should be uint8_t[32]
-     * @param  PASS     should be uint8_t[32]
+     * @param  PASS     should be uint8_t[64]
      * @return ESP_OK on success
      *
      * @warning Scanning stops any other mode !

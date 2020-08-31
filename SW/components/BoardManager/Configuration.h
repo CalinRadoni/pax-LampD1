@@ -21,16 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define Configuration_H
 
 #include "freertos/FreeRTOS.h"
-#include "tcpip_adapter.h"
+#include "cJSON.h"
+#include "WiFiConfig.h"
 
-const uint8_t MaxNameLen = 64;
-const uint8_t APConfigCnt = 3;
-
-struct APConfig
-{
-    uint8_t SSID[32];
-    uint8_t Pass[64];
-};
+const uint8_t NameBufLen = 64;
+const uint8_t WiFiConfigCnt = 3;
+const uint8_t ipv4BufLen = 16;
 
 class Configuration
 {
@@ -39,16 +35,30 @@ public:
     virtual ~Configuration();
 
     uint32_t version;
-    char name[MaxNameLen];
-    APConfig apCfg[APConfigCnt];
-    tcpip_adapter_ip_info_t ipInfo;
-
-    esp_err_t InitializeNVS(void);
+    char name[NameBufLen];
+    WiFiConfig apCfg[WiFiConfigCnt];
+    char ipAddr[ipv4BufLen];
+    char ipMask[ipv4BufLen];
+    char ipGateway[ipv4BufLen];
+    char ipDNS[ipv4BufLen];
 
     void InitData(void);
 
-    esp_err_t ReadConfiguration(void);
-    esp_err_t WriteConfiguration(bool eraseAll);
+    esp_err_t InitializeNVS(void);
+
+    esp_err_t ReadFromNVS(void);
+    esp_err_t WriteToNVS(bool eraseAll);
+
+    /**
+     * @warning Delete returned string with 'free' !
+     */
+    char* CreateJSONConfigString(bool addWhitespaces);
+
+protected:
+    virtual bool CreateJSON_CustomData(cJSON*);
+
+    bool SetFromJSONString(char*);
+    virtual bool SetFromJSONString_CustomData();
 
 private:
 };

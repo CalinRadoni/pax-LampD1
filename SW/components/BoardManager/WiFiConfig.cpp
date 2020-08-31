@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "esp_err.h"
 #include "esp_wifi.h"
 
-#include "string.h"
+#include <cstring>
+#include <algorithm>
 
 WiFiConfig::WiFiConfig(void)
 {
@@ -36,21 +37,14 @@ WiFiConfig::~WiFiConfig(void)
 
 void WiFiConfig::Initialize(void)
 {
-    memset(SSID, 0, 32);
-    memset(PASS, 0, 64);
+    std::fill(SSID, SSID + SSIDBufLen, static_cast<uint8_t>(0));
+    std::fill(Pass, Pass + PassBufLen, static_cast<uint8_t>(0));
 }
 
 bool WiFiConfig::CheckData(void)
 {
-    size_t len;
-
-    len = strlen((char*)SSID);
-    if (len < 1)  return false;
-    if (len > 31) return false;
-
-    len = strlen((char*)PASS);
-    if (len < 8)  return false;
-    if (len > 63) return false;
+    if (strlen((char*)SSID) < 1) return false;
+    if (strlen((char*)Pass) < 8)  return false;
 
     return true;
 }
@@ -62,7 +56,7 @@ void WiFiConfig::SetStationConfig(wifi_config_t* cfg)
     memset(cfg, 0, sizeof(wifi_config_t));
     memcpy(cfg->sta.ssid, SSID, 31 * sizeof(uint8_t));
            cfg->sta.ssid[31] = 0;
-    memcpy(cfg->sta.password, PASS, 63 * sizeof(uint8_t));
+    memcpy(cfg->sta.password, Pass, 63 * sizeof(uint8_t));
            cfg->sta.password[63] = 0;
 }
 
@@ -74,32 +68,31 @@ void WiFiConfig::SetAPConfig(wifi_config_t* cfg)
     memcpy(cfg->ap.ssid, SSID, 31 * sizeof(uint8_t));
            cfg->ap.ssid[31] = 0;
            cfg->ap.ssid_len = 0;
-    memcpy(cfg->ap.password, PASS, 63 * sizeof(uint8_t));
+    memcpy(cfg->ap.password, Pass, 63 * sizeof(uint8_t));
            cfg->ap.password[63] = 0;
 }
 
 void WiFiConfig::SetFromStrings(const char* strSSID, const char* strPASS)
 {
-    memset(SSID, 0, 32);
+    Initialize();
+
     if (strSSID != nullptr) {
         strncpy((char*)SSID, strSSID, 31);
         SSID[31] = 0;
     }
 
-    memset(PASS, 0, 64);
     if (strPASS != nullptr) {
-        strncpy((char*)PASS, strPASS, 63);
-        PASS[63] = 0;
+        strncpy((char*)Pass, strPASS, 63);
+        Pass[63] = 0;
     }
 }
 
 void WiFiConfig::SetFromNameAndMAC(const char* name, const uint8_t* MAC)
 {
-    memset(SSID, 0, 32);
-    memset(PASS, 0, 64);
+    Initialize();
 
-    if (name==nullptr || MAC==nullptr) return;
+    if ((name == nullptr) || (MAC == nullptr)) return;
 
     snprintf((char*)SSID, 32, "%s-%02X%02X%02X", name, MAC[3], MAC[4], MAC[5]);
-    memcpy(PASS, SSID, 32);
+    memcpy(Pass, SSID, 32);
 }

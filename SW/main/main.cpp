@@ -54,7 +54,7 @@ BoardDev34 board;
 DStrip stripL, stripR;
 DLEDController LEDcontroller;
 ESP32RMTChannel rmt0, rmt1;
-HTTPC2Server theHTTPServer;
+HTTPC2Server httpServer;
 
 extern "C" {
 
@@ -154,9 +154,11 @@ extern "C" {
         HTTPCommand httpCmd;
 
         for(;;) {
-            if (xQueueReceive(theHTTPServer.serverQueue, &httpCmd, portMAX_DELAY) == pdPASS) {
+            if (xQueueReceive(httpServer.serverQueue, &httpCmd, portMAX_DELAY) == pdPASS) {
                 switch (httpCmd.command) {
-                    case 0:
+                    case 0: // nop-like command
+                        break;
+                    case 1:
                         for (uint16_t i = 0; i < cfgLEDcount; i++) {
                             stripL.SetPixel(i, 0);
                             stripR.SetPixel(i, 0);
@@ -164,7 +166,7 @@ extern "C" {
                         LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
                         LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
                         break;
-                    case 1:
+                    case 2:
                         for (uint16_t i = 0; i < cfgLEDcount; i++) {
                             stripL.SetPixel(i, httpCmd.data);
                             stripR.SetPixel(i, httpCmd.data);
@@ -191,7 +193,7 @@ extern "C" {
     {
         simpleOTA.CheckApplicationImage();
 
-        esp_err_t err = board.Initialize();
+        esp_err_t err = board.Initialize(&httpServer);
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Initialization failed !");
             board.DoNothingForever();
@@ -203,7 +205,7 @@ extern "C" {
             board.DoNothingForever();
         }
 
-        err = theHTTPServer.StartServer();
+        err = httpServer.StartServer();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start HTTP server !");
             board.DoNothingForever();

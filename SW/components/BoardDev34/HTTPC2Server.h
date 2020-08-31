@@ -19,39 +19,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef HTTPC2Server_H
 #define HTTPC2Server_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "esp_http_server.h"
+#include "pax_http_server.h"
 
-class HTTPC2Server
+class HTTPC2Server : public PaxHttpServer
 {
 public:
     HTTPC2Server(void);
     virtual ~HTTPC2Server();
-
-    /**
-     * @brief The queue for timer events
-     *
-     * The queue is created by the StartServer function and destroyed by the StopServer function or on the destructor
-     */
-    QueueHandle_t serverQueue;
-
-    esp_err_t StartServer(void);
-    void StopServer(void);
-
-    esp_err_t HandleRequest(httpd_req_t*);
-
-private:
-    httpd_handle_t serverHandle;
-
-    esp_err_t HandleGetRequest(httpd_req_t*);
-    esp_err_t HandlePostRequest(httpd_req_t*);
-    esp_err_t HandleCmdJson(httpd_req_t*);
-    esp_err_t SaveAP(httpd_req_t*);
-    esp_err_t HandleOTA(httpd_req_t*);
-
-    bool working;
 };
 
 #endif

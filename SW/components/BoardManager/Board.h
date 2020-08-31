@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "freertos/FreeRTOS.h"
 #include "BoardEvents.h"
+#include "pax_http_server.h"
 
 #include "esp32_hal_gpio.h"
 #include "esp32_hal_adc.h"
@@ -49,7 +50,7 @@ public:
      * - NVS Initialization fails
      * - CriticalInit does not return ESP_OK
      */
-    esp_err_t Initialize(void);
+    esp_err_t Initialize(PaxHttpServer *theHttpServer);
 
     virtual esp_err_t EarlyInit(void) = 0;
     virtual esp_err_t CriticalInit(void) = 0;
@@ -64,11 +65,6 @@ public:
      * @brief Enters deep sleep for one hour
      */
     void GoodBye(void);
-
-    /**
-     * @brief Check if configurations stored in NVS seems OK
-     */
-    bool CheckConfiguration(void);
 
     /**
      * @brief Start the board in APSTA mode for configuration purposes
@@ -119,6 +115,8 @@ public:
 
 protected:
     EventGroupHandler events;
+
+    PaxHttpServer *httpServer;
 
     bool initialized;
 

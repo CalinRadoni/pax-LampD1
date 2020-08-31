@@ -29,7 +29,14 @@ struct HTTPCommand
 {
     uint8_t command;
     uint32_t data;
+
+    HTTPCommand() {
+        command = 0;
+        data = 0;
+    }
 };
+
+const size_t workBufferSize = 1000;
 
 class PaxHttpServer
 {
@@ -49,17 +56,16 @@ public:
 
     esp_err_t HandleRequest(httpd_req_t*);
 
-private:
+protected:
     httpd_handle_t serverHandle;
     bool working;
 
-    const uint8_t workBufferSize = 251;
     char workBuffer[workBufferSize];
 
     esp_err_t HandleGetRequest(httpd_req_t*);
     esp_err_t HandlePostRequest(httpd_req_t*);
 
-    virtual void SetJsonHeader(httpd_req_t*);
+    virtual esp_err_t SetJsonHeader(httpd_req_t*);
     virtual esp_err_t HandleGet_StatusJson(httpd_req_t*);
     virtual esp_err_t HandleGet_ConfigJson(httpd_req_t*);
 

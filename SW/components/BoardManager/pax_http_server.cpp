@@ -22,10 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "esp_log.h"
 #include "esp_system.h"
 
-#include <string.h>
+#include <cstring>
 
 #include "pax_http_server.h"
-
+#include "Configuration.h"
 #include "cJSON.h"
 #include "ESP32SimpleOTA.h"
 
@@ -60,9 +60,6 @@ PaxHttpServer::PaxHttpServer(void)
     serverQueue = 0;
     serverHandle = nullptr;
     working = false;
-
-//    SSID[0] = 0;
-//    PASS[0] = 0;
 }
 
 PaxHttpServer::~PaxHttpServer()
@@ -155,15 +152,20 @@ esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
 
+    ESP_LOGI(TAG, "uri: %s", req->uri);
+
     if (strcmp(req->uri, "/status.json") == 0) {
         return HandleGet_StatusJson(req);
     }
 
     if (strcmp(req->uri, "/config.json") == 0) {
-        return HandlePage_ConfigJson(req);
+        return HandleGet_ConfigJson(req);
     }
 
-    if (strcmp(req->uri, "index.html") == 0) {
+    if (strcmp(req->uri, "/") == 0) {
+        return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
+    }
+    if (strcmp(req->uri, "/index.html") == 0) {
         return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
     }
 
@@ -171,27 +173,46 @@ esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
     return ESP_FAIL;
 }
 
-virtual void SetJsonHeader(httpd_req_t* req)
+esp_err_t PaxHttpServer::SetJsonHeader(httpd_req_t* req)
 {
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    esp_err_t res = httpd_resp_set_type(req, "application/json");
+    if (res != ESP_OK) return res;
+
+    res = httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    if (res != ESP_OK) return res;
+
+    res = httpd_resp_set_hdr(req, "Pragma", "no-cache");
+    return res;
 }
 
-esp_err_t HandleGet_StatusJson(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandleGet_StatusJson(httpd_req_t* req)
 {
-    SetJsonHeader(res);
+    esp_err_t res = SetJsonHeader(req);
+    if(res != ESP_OK) return res;
 
     uint8_t statusVal = 0;
     snprintf(workBuffer, workBufferSize, "{\"status\":%d}\n", statusVal);
 
-    return httpd_resp_send(req, workBuffer, strnlen(workBuffer, workBufferSize));
+    return httpd_resp_sendstr(req, workBuffer);
 }
 
-esp_err_t HandleGet_ConfigJson(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandleGet_ConfigJson(httpd_req_t* req)
 {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
-    return ESP_FAIL;
+    char *str = configuration.CreateJSONConfigString(true);
+    if (str == nullptr) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
+        return ESP_FAIL;
+    }
+
+    esp_err_t res = SetJsonHeader(req);
+    if(res != ESP_OK) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
+        return res;
+    }
+
+    res = httpd_resp_sendstr(req, str);
+    free(str);
+    return res;
 }
 
 esp_err_t PaxHttpServer::HandlePostRequest(httpd_req_t* req)
@@ -221,11 +242,11 @@ esp_err_t PaxHttpServer::HandlePostRequest(httpd_req_t* req)
     return ESP_FAIL;
 }
 
-esp_err_t HandlePost_CmdJson(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandlePost_CmdJson(httpd_req_t* req)
 {
-    int totalLen = req->content_len;
-    int curLen = 0;
-    int recLen = 0;
+    size_t totalLen = req->content_len;
+    size_t curLen = 0;
+    size_t recLen = 0;
 
     if (totalLen >= workBufferSize) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "cmd content too long");
@@ -242,10 +263,8 @@ esp_err_t HandlePost_CmdJson(httpd_req_t* req)
     workBuffer[totalLen] = '\0';
 
     HTTPCommand cmd;
-    cmd.command = 0;
-    cmd.data = 0;
 
-    cJSON *root = cJSON_Parse(buffer);
+    cJSON *root = cJSON_Parse(workBuffer);
     if (root != nullptr) {
         cJSON *item;
         item = cJSON_GetObjectItem(root, "cmd");
@@ -279,7 +298,7 @@ esp_err_t HandlePost_CmdJson(httpd_req_t* req)
     return ESP_OK;
 }
 
-esp_err_t HandlePost_ConfigJson(httpd_req_t* req)
+esp_err_t PaxHttpServer::HandlePost_ConfigJson(httpd_req_t* req)
 {
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
     return ESP_FAIL;

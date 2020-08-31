@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Board.h"
 #include "Configuration.h"
 #include "WiFiManager.h"
-#include "HTTPConfigServer.h"
+#include "pax_http_server.h"
 
 // -----------------------------------------------------------------------------
 
@@ -47,6 +47,7 @@ Board::Board(void)
 {
     initialized = false;
     memset(MAC, 0, 6);
+    httpServer = nullptr;
 }
 
 Board::~Board(void)
@@ -54,10 +55,15 @@ Board::~Board(void)
     //
 }
 
-esp_err_t Board::Initialize(void)
+esp_err_t Board::Initialize(PaxHttpServer *theHttpServer)
 {
     if (initialized)
         return ESP_ERR_INVALID_STATE;
+
+    if (theHttpServer == nullptr)
+        return ESP_ERR_INVALID_ARG;
+
+    httpServer = theHttpServer;
 
     esp_err_t err = EarlyInit();
     if (err != ESP_OK) {
@@ -81,8 +87,7 @@ esp_err_t Board::Initialize(void)
         GoodBye();
         return err;
     }
-    theWiFiManager.events      = &events;
-    theHTTPConfigServer.events = &events;
+    theWiFiManager.events = &events;
 
     tcpip_adapter_init();
 
@@ -92,7 +97,7 @@ esp_err_t Board::Initialize(void)
         return err;
     }
 
-    err = configuration.ReadConfiguration();
+    err = configuration.ReadFromNVS();
     if (err != ESP_OK) {
         GoodBye();
         return err;
@@ -117,17 +122,6 @@ void Board::GoodBye(void)
 {
     uint64_t sleepTimeUS = usInOneHour;
     esp_deep_sleep(sleepTimeUS);
-}
-
-bool Board::CheckConfiguration(void)
-{
-    for (uint8_t i = 0; i < WiFiConfigCount; i++)
-    {
-        if (configuration.wcfg[i].CheckData())
-            return true;
-    }
-
-    return false;
 }
 
 esp_err_t Board::StartConfigurationAP(void)
@@ -164,12 +158,13 @@ esp_err_t Board::StartConfigurationAP(void)
         return err;
     }
 
-    err = theHTTPConfigServer.StartServer();
+    err = httpServer->StartServer();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "%d StartServer", err);
         return err;
     }
 
+/*
     bool done = false;
 
     while (!done) {
@@ -244,8 +239,9 @@ esp_err_t Board::StartConfigurationAP(void)
             i--;
         }
     }
+*/
 
-    theHTTPConfigServer.StopServer();
+    httpServer->StopServer();
     theWiFiManager.Stop(true);
     theWiFiManager.Clean();
 
@@ -320,7 +316,7 @@ esp_err_t Board::Connect(void)
 
     theWiFiManager.Stop(true);
 
-    staCfg.SetFromStrings((const char*)configuration.wcfg[0].SSID, (const char*)configuration.wcfg[0].PASS);
+    staCfg.SetFromStrings((const char*)configuration.apCfg[0].SSID, (const char*)configuration.apCfg[0].Pass);
     esp_err_t err = theWiFiManager.Start(WiFiManagerMode::station, &staCfg, nullptr);
     if(err != ESP_OK) {
         ESP_LOGE(TAG, "Connect error");

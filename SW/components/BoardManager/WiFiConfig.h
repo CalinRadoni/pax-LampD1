@@ -23,14 +23,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "freertos/FreeRTOS.h"
 #include "esp_wifi.h"
 
+const uint8_t SSIDBufLen = 33;
+const uint8_t PassBufLen = 65;
+
 class WiFiConfig
 {
 public:
     WiFiConfig(void);
-    ~WiFiConfig(void);
+    ~WiFiConfig();
 
-    uint8_t SSID[32];
-    uint8_t PASS[64];
+    uint8_t SSID[SSIDBufLen]; // minimum length for a valid SSID is 1
+    uint8_t Pass[PassBufLen]; // minimum length for a valid WPA2 password is 8
 
     void Initialize(void);
 
