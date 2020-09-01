@@ -1,15 +1,68 @@
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <!-- shortcut::src/favicon.png -->
-        <script type='text/javascript' src='/main.js'></script>
-        <link rel='stylesheet' href='/main.css'>
-    </head>
-    <body onload="Init();">
-        <!-- just a simple hello world-->
-        <h1>Hello</h1>
-        <h3>world</h3>
-        <div id="test"></div>
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>pax-LampD1</title>
+    <!-- shortcut::src/favicon.png -->
+    <script type='text/javascript' src='/main.js'></script>
+    <link rel='stylesheet' href='/main.css'>
+</head>
+<body onload="Init();">
+    <div class="title">
+        <h1>pax-LampD1</h1>
+    </div>
+
+    <div class="tab">
+        <button class="tabLink active" onclick="openTab(event, 'TH')">Home</button>
+        <button class="tabLink" onclick="openTab(event, 'TP')">Colors</button>
+        <button class="tabLink" onclick="openTab(event, 'TS')">Settings</button>
+    </div>
+
+    <div>
+
+    <div id="TH" class="tabBody" style="display: block;">
+        <h3>Enter color code in hex</h3>
+        <input id="CCode" type="text" value="" maxlength="8" size="8">&nbsp;
+        <input type="button" value="Set" onclick="SetColor()" />&nbsp;
+        <input type="button" value="Off" onclick="TurnOff()" /><br/>
+        <br/>
+        <span id="sTxt"></span><br/>
+    </div>
+
+    <div id="TP" class="tabBody">
+        <h3>RGB</h3><div id="pRGB"></div><br/>
+        <h3>RYB</h3><div id="pRYB"></div>
+    </div>
+
+    <div id="TS" class="tabBody">
+        <h3>Firmware</h3>
+        <input type="file" id="fwf" accept=".bin" style="display:none" onchange="swfC(this)" />
+        <input type="button" value="Select firmware file" onclick="document.getElementById('fwf').click();" /> &gt;&gt;
+        <input type="button" value="Upload firmware" onclick="UpFW()" /> &gt;&gt;
+        <input type="button" value="Reset" onclick="ResetBoard()" /><br/>
+        <span id="swf"></span><br/>
+        <span id="swi"></span><br/>
+        <h3>Configuration</h3>
+        Version: <input id="pversion" type="text" value=""><br/>
+        Name: <input id="pname" type="text" value=""><br/>
+        SSID: <input id="pap1s" type="text" value=""><br/>
+        Pass: <input id="pap1p" type="password" value=""><br/>
+        Backup SSID : <input id="pap2s" type="text" value=""><br/>
+        Backup Pass: <input id="pap2p" type="password" value=""><br/>
+        <input type="button" value="Reload" onclick="GetConfig()" />&nbsp;
+        <input type="button" value="Save" onclick="SaveConfig()" /><br/>
+        <span id="csi"></span>
+    </div>
+    </div>
+
+    <div>
+        <pre>
+    TODO: add a multiline log field here (3 - 4 lines)
+    See:
+    - https://stackoverflow.com/questions/20256760/javascript-console-log-to-html
+    - Use and array of entries, line clamping (https://css-tricks.com/line-clampin/ ) s-ar putea sa nu fie ce vreau
+        </pre>
+    </div>
+</body>
 </html>

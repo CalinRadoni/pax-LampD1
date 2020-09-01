@@ -5,7 +5,6 @@ const cleancss = require('gulp-clean-css');
 const favicon = require('gulp-base64-favicon');
 const htmlmin = require('gulp-htmlmin');
 const gzip = require('gulp-gzip');
-const argv = require('yargs').argv;
 const del = require('del');
 
 const srcDir = 'src/';
@@ -29,15 +28,10 @@ function build_html() {
             removeComments: true,
             minifyCSS: true,
             minifyJS: true
-       }));
-
-    let test = (argv.test === undefined) ? false : true;
-
-    if (test !== true) {
-        stream = stream.pipe(gzip());
-    }
-
-    stream = stream.pipe(gulp.dest(dstDir));
+       }))
+       .pipe(gulp.dest(dstDir))
+       .pipe(gzip())
+       .pipe(gulp.dest(dstDir));
 
     return stream;
 }
