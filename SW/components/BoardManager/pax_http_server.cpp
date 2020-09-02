@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "esp_log.h"
 #include "esp_system.h"
 
+#include <string>
 #include <cstring>
 
 #include "pax_http_server.h"
@@ -35,8 +36,8 @@ static const char* TAG = "PaxHttpSrv";
 
 const uint8_t queueLength = 8;
 
-extern const uint8_t index_html_start[] asm("_binary_index_html_start");
-extern const uint8_t index_html_end[]   asm("_binary_index_html_end");
+extern const uint8_t index_html_gz_start[] asm("_binary_index_html_gz_start");
+extern const uint8_t index_html_gz_end[]   asm("_binary_index_html_gz_end");
 
 // -----------------------------------------------------------------------------
 
@@ -152,21 +153,26 @@ esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
 
-    ESP_LOGI(TAG, "uri: %s", req->uri);
+    // ESP_LOGI(TAG, "uri: %s", req->uri);
 
-    if (strcmp(req->uri, "/status.json") == 0) {
+    std::string str = req->uri;
+
+    if (str == "/status.json") {
         return HandleGet_StatusJson(req);
     }
 
-    if (strcmp(req->uri, "/config.json") == 0) {
+    if (str == "/config.json") {
         return HandleGet_ConfigJson(req);
     }
 
-    if (strcmp(req->uri, "/") == 0) {
-        return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
-    }
-    if (strcmp(req->uri, "/index.html") == 0) {
-        return httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
+    if ((str == "/") || (str == "/index.html")){
+        esp_err_t res = httpd_resp_set_type(req, HTTPD_TYPE_TEXT);
+        if (res != ESP_OK) return res;
+
+        res = httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+        if (res != ESP_OK) return res;
+
+        return httpd_resp_send(req, (const char *)index_html_gz_start, index_html_gz_end - index_html_gz_start);
     }
 
     httpd_resp_send_err(req, HTTPD_404_NOT_FOUND, "404 :)");
@@ -175,14 +181,13 @@ esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
 
 esp_err_t PaxHttpServer::SetJsonHeader(httpd_req_t* req)
 {
-    esp_err_t res = httpd_resp_set_type(req, "application/json");
+    esp_err_t res = httpd_resp_set_type(req, HTTPD_TYPE_JSON);
     if (res != ESP_OK) return res;
 
     res = httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     if (res != ESP_OK) return res;
 
-    res = httpd_resp_set_hdr(req, "Pragma", "no-cache");
-    return res;
+    return httpd_resp_set_hdr(req, "Pragma", "no-cache");
 }
 
 esp_err_t PaxHttpServer::HandleGet_StatusJson(httpd_req_t* req)
@@ -207,6 +212,7 @@ esp_err_t PaxHttpServer::HandleGet_ConfigJson(httpd_req_t* req)
     esp_err_t res = SetJsonHeader(req);
     if(res != ESP_OK) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "config.json");
+        free(str);
         return res;
     }
 

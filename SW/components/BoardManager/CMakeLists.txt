@@ -19,7 +19,8 @@ set(c_REQUIREMENTS
 )
 
 set(c_EMBED_FILES
-    "${CMAKE_SOURCE_DIR}/web/index.html"
+    "${CMAKE_SOURCE_DIR}/html/static/index.html"
+    "${CMAKE_SOURCE_DIR}/html/static/index.html.gz"
 )
 
 idf_component_register(
