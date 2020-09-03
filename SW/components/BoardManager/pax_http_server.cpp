@@ -153,8 +153,6 @@ esp_err_t PaxHttpServer::HandleGetRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
 
-    // ESP_LOGI(TAG, "uri: %s", req->uri);
-
     std::string str = req->uri;
 
     if (str == "/status.json") {
@@ -225,15 +223,17 @@ esp_err_t PaxHttpServer::HandlePostRequest(httpd_req_t* req)
 {
     if (req == nullptr) return ESP_FAIL;
 
-    if (strcmp(req->uri, "/cmd.json") == 0) {
+    std::string str = req->uri;
+
+    if (str == "/cmd.json") {
         return HandlePost_CmdJson(req);
     }
 
-    if (strcmp(req->uri, "/config.json") == 0) {
+    if (str == "/config.json") {
         return HandlePost_ConfigJson(req);
     }
 
-    if (strcmp(req->uri, "/upfw") == 0) {
+    if (str == "/update") {
         esp_err_t err = HandleOTA(req);
         if (err == ESP_OK) {
             httpd_resp_sendstr(req, "OTA OK.");

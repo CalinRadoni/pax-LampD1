@@ -200,7 +200,7 @@ function UpFW() {
         }
     });
 
-    xhr.open("POST", "/upfw", true);
+    xhr.open("POST", "/update", true);
     xhr.send(f);
 }
 
