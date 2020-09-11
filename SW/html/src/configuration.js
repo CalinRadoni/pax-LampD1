@@ -40,6 +40,4 @@ class Configuration {
         }
         return JSON.stringify(this);
     }
-};
-
-export default Configuration;
+}

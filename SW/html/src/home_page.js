@@ -16,9 +16,9 @@ class HomePage {
                 if (i != 0) {
                     str += '</div>';
                 }
-                str += '<div class="btnr">';
+                str += '<div class="pure-g">';
             }
-            str += '<div class="btnc" name="' + nn[i] + '" onclick="PClick(this)" style="background-color:#' + pp[i] +';"></div>';
+            str += '<div class="pure-u-1-6" name="' + nn[i] + '" onclick="PClick(this)" style="background-color:#' + pp[i] +';">&nbsp;</div>';
         }
         str += '</div>';
         return str;
@@ -41,6 +41,4 @@ class HomePage {
 
         this.pdiv.innerHTML = str;
     }
-};
-
-export default HomePage;
+}

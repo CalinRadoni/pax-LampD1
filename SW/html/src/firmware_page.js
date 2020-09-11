@@ -21,6 +21,4 @@ class FirmwarePage {
 
         this.pdiv.innerHTML = xstr;
     }
-};
-
-export default FirmwarePage;
+}

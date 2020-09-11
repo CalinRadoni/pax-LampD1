@@ -24,6 +24,4 @@ class ConfigPage {
 
         this.pdiv.innerHTML = xstr;
     }
-};
-
-export default ConfigPage;
+}

@@ -48,6 +48,4 @@ class Logger {
         }
         this.pdiv.innerHTML = xstr;
     }
-};
-
-export default Logger;
+}

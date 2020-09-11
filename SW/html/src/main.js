@@ -1,9 +1,3 @@
-import Logger from './logger';
-import HomePage from './home_page';
-import FirmwarePage from './firmware_page';
-import ConfigPage from './config_page';
-import Configuration from './configuration';
-
 class App {
     constructor() {
         this.logger = new Logger();
@@ -42,9 +36,9 @@ class App {
                     this.logger.error(xhr.status + " " + xhr.responseText);
                 }
             }
-        }
-        xhr.onerror = function() { this.logger.error("Send error"); }
-        xhr.onabort = function() { this.logger.warning("Send canceled"); }
+        };
+        xhr.onerror = function() { this.logger.error("Send error"); };
+        xhr.onabort = function() { this.logger.warning("Send canceled"); };
 
         xhr.open("POST", "/config.json", true);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
@@ -75,9 +69,9 @@ class App {
                     this.logger.error(xhr.status + " " + xhr.responseText);
                 }
             }
-        }
-        xhr.onerror = function() { this.logger.error("Send error"); }
-        xhr.onabort = function() { this.logger.warning("Send canceled"); }
+        };
+        xhr.onerror = function() { this.logger.error("Send error"); };
+        xhr.onabort = function() { this.logger.warning("Send canceled"); };
 
         let data = document.getElementById('CCode').value;
         let str = JSON.stringify({ "cmd": cmdID, "data": data });
@@ -126,7 +120,7 @@ class App {
                     this.logger.error(xhr.status + " " + xhr.responseText);
                 }
             }
-        }
+        };
 
         var upp = document.getElementById('swi');
         xhr.upload.addEventListener("progress", function(ev) {
