@@ -40,10 +40,7 @@ function MinimizeJS () {
 }
 
 function BuildCSS () {
-  cat ./purecss/pure-2.0.3.css \
-      ./purecss/grids-responsive-2.0.3.css \
-      ./src/*.css \
-      > ./${tmpDir}/style.css
+  cat ./src/*.css > ./${tmpDir}/style.css
 }
 
 function MinimizeCSS () {
