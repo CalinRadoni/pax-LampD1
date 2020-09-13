@@ -279,7 +279,12 @@ esp_err_t PaxHttpServer::HandlePost_CmdJson(httpd_req_t* req)
         }
         item = cJSON_GetObjectItem(root, "data");
         if (item != nullptr) {
-            cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 16);
+            if (item->type == cJSON_Number) {
+                cmd.data = (uint32_t)item->valuedouble;
+            }
+            else {
+                cmd.data = (uint32_t)strtoul(item->valuestring, nullptr, 10);
+            }
         }
 
         cJSON_Delete(root);

@@ -42,7 +42,7 @@ static const uint8_t  cfgOutputPinL = 14;    // the GPIO where LEDs are connecte
 static const uint8_t  cfgOutputPinR = 13;    // the GPIO where LEDs are connected
 static const uint8_t  cfgChannelL   = 0;     // ESP32 RMT's channel [0 ... 7]
 static const uint8_t  cfgChannelR   = 1;     // ESP32 RMT's channel [0 ... 7]
-static const uint16_t cfgLEDcount   = 80;    // 64 LEDS
+static const uint16_t cfgLEDcount   = 80;    // number of LEDS
 static const uint8_t  cfgMaxCCV     = 32;    // maximum value allowed for color component
 
 static const uint32_t dTimerPeriod = 5; // ms
@@ -56,6 +56,9 @@ DLEDController LEDcontroller;
 ESP32RMTChannel rmt0, rmt1;
 HTTPC2Server httpServer;
 
+uint32_t currentColor = 0xFF00FF;
+uint32_t currentIntensity = 10; // 0 ... 100
+
 extern "C" {
 
     void delay_ms(uint32_t ms)
@@ -63,6 +66,23 @@ extern "C" {
         if (ms != 0) {
             vTaskDelay(ms / portTICK_PERIOD_MS);
         }
+    }
+
+    uint32_t RGBadjusted (uint32_t val) {
+        uint32_t r, g, b;
+
+        b = val & 0x0000FF;
+        g = (val >> 8) & 0x0000FF;
+        r = (val >> 16) & 0x0000FF;
+
+        uint32_t ci;
+
+        ci = currentIntensity > 100 ? 100 : currentIntensity;
+        r = r * ci / 100;
+        g = g * ci / 100;
+        b = b * ci / 100;
+
+        return (r << 16) | (g << 8) | b;
     }
 
     static void TimerTask(void *taskParameter) {
@@ -167,9 +187,22 @@ extern "C" {
                         LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
                         break;
                     case 2:
+                        uint32_t adj;
+                        currentColor = httpCmd.data;
+                        adj = RGBadjusted(currentColor);
                         for (uint16_t i = 0; i < cfgLEDcount; i++) {
-                            stripL.SetPixel(i, httpCmd.data);
-                            stripR.SetPixel(i, httpCmd.data);
+                            stripL.SetPixel(i, adj);
+                            stripR.SetPixel(i, adj);
+                        }
+                        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
+                        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+                        break;
+                    case 3:
+                        currentIntensity = httpCmd.data;
+                        adj = RGBadjusted(currentColor);
+                        for (uint16_t i = 0; i < cfgLEDcount; i++) {
+                            stripL.SetPixel(i, adj);
+                            stripR.SetPixel(i, adj);
                         }
                         LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
                         LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);

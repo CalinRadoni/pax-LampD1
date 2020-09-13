@@ -1,23 +1,14 @@
 class App {
-    constructor() {
-        this.logger = new Logger();
-        this.homePage = new HomePage();
-        this.config = new Configuration();
-        this.configPage = new ConfigPage();
-        this.firmwarePage = new FirmwarePage();
+    constructor(logger) {
     }
 
     Initialize() {
-        this.logger.set_parent_div(document.getElementById('LOG'));
-        this.logger.info('Test info');
-        this.logger.warning('Test warning');
-        this.logger.error('Test error');
+        logger.set_parent_div(document.getElementById('LOG'));
 
         let appel = document.getElementById('APP');
-
-        this.homePage.set_parent_div(appel);
-        this.configPage.set_parent_div(appel);
-        this.firmwarePage.set_parent_div(appel);
+        homePage.set_parent_div(appel);
+        configPage.set_parent_div(appel);
+        firmwarePage.set_parent_div(appel);
 
         this.GetConfig();
 
@@ -30,19 +21,19 @@ class App {
         xhr.onload = function() {
             if (xhr.readyState === xhr.DONE) {
                 if (xhr.status === 200) {
-                    this.logger.info(xhr.responseText);
+                    logger.info(xhr.responseText);
                 }
                 else {
-                    this.logger.error(xhr.status + " " + xhr.responseText);
+                    logger.error(xhr.status + " " + xhr.responseText);
                 }
             }
         };
-        xhr.onerror = function() { this.logger.error("Send error"); };
-        xhr.onabort = function() { this.logger.warning("Send canceled"); };
+        xhr.onerror = function() { logger.error("Send error"); };
+        xhr.onabort = function() { logger.warning("Send canceled"); };
 
         xhr.open("POST", "/config.json", true);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhr.send(this.config.fromPagetoString());
+        xhr.send(configuration.fromPagetoString());
     }
 
     GetConfig() {
@@ -50,7 +41,7 @@ class App {
         xhr.onload = function() {
             if (xhr.readyState === xhr.DONE) {
                 if (xhr.status === 200) {
-                    this.config.fromString(xhr.responseText);
+                    configuration.fromString(xhr.responseText);
                 }
             }
         };
@@ -58,22 +49,21 @@ class App {
         xhr.send();
     }
 
-    SendCmd(cmdID) {
+    SendCmd(cmdID, data) {
         let xhr = new XMLHttpRequest();
         xhr.onload = function() {
             if (xhr.readyState === xhr.DONE) {
                 if (xhr.status === 200) {
-                    this.logger.info(xhr.responseText);
+                    logger.info(xhr.responseText);
                 }
                 else {
-                    this.logger.error(xhr.status + " " + xhr.responseText);
+                    logger.error(xhr.status + " " + xhr.responseText);
                 }
             }
         };
-        xhr.onerror = function() { this.logger.error("Send error"); };
-        xhr.onabort = function() { this.logger.warning("Send canceled"); };
+        xhr.onerror = function() { logger.error("Send error"); };
+        xhr.onabort = function() { logger.warning("Send canceled"); };
 
-        let data = document.getElementById('CCode').value;
         let str = JSON.stringify({ "cmd": cmdID, "data": data });
 
         xhr.open("POST", "/cmd.json", true);
@@ -81,54 +71,52 @@ class App {
         xhr.send(str);
     }
 
-    SetColor() { this.SendCmd(2); }
-
-    TurnOff()  { this.SendCmd(1); }
-
-    PClick(cdiv) {
-        document.getElementById('CCode').value = cdiv.getAttribute("name");
-        this.SendCmd(1);
+    TurnOff() {
+        this.SendCmd(1, 0);
     }
-
-    ResetBoard() { this.SendCmd(0xFE); }
-
-    swfC(ii) {
-        if (!ii) return;
-        if (!ii.files) return;
-        let f = ii.files[0];
-        if (!f) return;
-        let d = document.getElementById('swf');
-        if (d) {
-            d.innerHTML = f.name + "<br/>size: " + f.size + " bytes";
-        }
+    SetLightColor(userColor) {
+        let str = userColor.toString(16);
+        document.getElementById('userColor').value = str;
+        this.SendCmd(2, userColor);
+    }
+    SetColor() {
+        let str = document.getElementById('userColor').value;
+        let val = parseInt(str, 16);
+        this.SendCmd(2, val);
+    }
+    SetIntensity() {
+        let val = document.getElementById('userInt').valueAsNumber;
+        this.SendCmd(3, val);
+    }
+    ResetBoard() {
+        this.SendCmd(0xFE, 0);
     }
 
     UpFW() {
-        let fs = document.getElementById('fwf');
-        if (!(fs && fs.files)) return;
-
-        let f = fs.files[0];
-        if (!f) return;
+        let f = firmwarePage.GetSelectedFile();
+        if (f == null) return;
 
         let xhr = new XMLHttpRequest();
         xhr.onreadystatechange = function() {
             if (xhr.readyState === xhr.DONE) {
                 if (xhr.status === 200) {
-                    this.logger.info(xhr.responseText);
+                    logger.info(xhr.responseText);
                 }
                 else {
-                    this.logger.error(xhr.status + " " + xhr.responseText);
+                    logger.error(xhr.status + " " + xhr.responseText);
                 }
+                firmwarePage.EndUpload();
             }
         };
 
-        var upp = document.getElementById('swi');
         xhr.upload.addEventListener("progress", function(ev) {
             if (ev.lengthComputable) {
                 let percent = 100 * ev.loaded / ev.total | 0;
-                upp.innerHTML = percent + "%";
+                firmwarePage.SetUploadProgress(percent);
             }
         });
+
+        firmwarePage.BeginUpload();
 
         xhr.open("POST", "/update", true);
         xhr.send(f);
@@ -136,24 +124,28 @@ class App {
 
     HashHandler() {
         if (location.hash === "#home") {
-            app.homePage.render();
+            homePage.render();
             return;
         }
 
         if (location.hash === "#config") {
-            app.configPage.render();
+            configPage.render();
             return;
         }
 
         if (location.hash === "#firmware") {
-            app.firmwarePage.render();
+            firmwarePage.render();
             return;
         }
 
         // treat everything else like #home
-        app.homePage.render();
+        homePage.render();
     }
 }
 
+var logger = new Logger();
+var homePage = new HomePage();
+var configuration = new Configuration();
+var configPage = new ConfigPage();
 var app = new App();
 app.Initialize();

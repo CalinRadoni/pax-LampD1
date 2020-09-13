@@ -133,6 +133,9 @@ a:focus {
     min-height: 2rem;
 }
 
+.intSel {
+    width: 300px;
+}
 
 @media (min-width: 768px) {
     .sidebar {
