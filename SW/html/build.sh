@@ -3,7 +3,7 @@
 set -e
 
 script_name="HTML Builder"
-script_version="1.2.2"
+script_version="1.3.0"
 
 tmpDir="tmp"
 webDir="web"
@@ -40,7 +40,8 @@ function MinimizeJS () {
 }
 
 function BuildCSS () {
-  cat ./src/*.css > ./${tmpDir}/style.css
+  find src -maxdepth 1 -type f -name *.css ! -name main.css -exec cat {} + > ./${tmpDir}/style.css
+  cat src/main.css >> ./${tmpDir}/style.css
 }
 
 function MinimizeCSS () {
