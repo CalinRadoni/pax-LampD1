@@ -4,7 +4,7 @@ set(c_SOURCE_FILES
 
 set(c_PRIVATE_REQUIREMENTS
     BoardDev34
-    BoardManager
+    ESP32BoardManager
     Debouncer
     ESP32SimpleOTA
     ESP32DLEDController

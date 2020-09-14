@@ -4,7 +4,7 @@ set(c_SOURCE_FILES
 )
 
 set(c_PRIVATE_REQUIREMENTS
-    BoardManager
+    ESP32BoardManager
     Debouncer
 )
 
