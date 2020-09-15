@@ -26,13 +26,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "driver/ledc.h"
 
+// TODO Rename this to BoardLampD1
 #include "BoardDev34.h"
+// TODO The server should be inside BoardDev34
+// TODO Rename this to HTTPSrvLampD1
+#include "HTTPC2Server.h"
 
-#include "ESP32SimpleOTA.h"
 #include "DStrip.h"
 #include "DLEDController.h"
 #include "ESP32Timers.h"
-#include "HTTPC2Server.h"
 
 #include "sdkconfig.h"
 
@@ -224,7 +226,7 @@ extern "C" {
 
     void app_main()
     {
-        simpleOTA.CheckApplicationImage();
+        board.CheckApplicationImage();
 
         esp_err_t err = board.Initialize(&httpServer);
         if (err != ESP_OK) {
@@ -238,7 +240,7 @@ extern "C" {
             board.DoNothingForever();
         }
 
-        err = httpServer.StartServer();
+        err = httpServer.StartServer(board.GetOTA());
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start HTTP server !");
             board.DoNothingForever();
