@@ -16,11 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef BoardDev34_H
-#define BoardDev34_H
+#ifndef BoardLampD1_H
+#define BoardLampD1_H
 
 #include "Board.h"
 #include "Debouncer.h"
+#include "HTTPSrvLampD1.h"
 
 /**
  * Hardware
@@ -36,11 +37,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * extPwr IO26, 1 = power on, 0 = power off (controls a NMOS-PMOS pair)
  */
 
-class BoardDev34 : public Board
+class BoardLampD1 : public Board
 {
 public:
-    BoardDev34(void);
-    virtual ~BoardDev34(void);
+    BoardLampD1(void);
+    virtual ~BoardLampD1(void);
 
     /**
      * @brief Perform basic hardware initialization
@@ -70,6 +71,14 @@ public:
      * @brief Retuns true if the onboard button is pressed
      */
     bool OnboardButtonPressed(void);
+
+    QueueHandle_t GetHttpServerQueue(void);
+
+    bool StartAPmode(void);
+    void StopAPmode(void);
+
+protected:
+    HTTPSrvLampD1 httpServer;
 
 private:
 };

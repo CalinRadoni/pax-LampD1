@@ -16,29 +16,16 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "freertos/FreeRTOS.h"
-#include "esp_err.h"
-#include "esp_log.h"
-#include "esp_system.h"
+#ifndef HTTPSrvLampD1_H
+#define HTTPSrvLampD1_H
 
-#include <string.h>
+#include "pax_http_server.h"
 
-#include "HTTPC2Server.h"
-
-#include "cJSON.h"
-
-// -----------------------------------------------------------------------------
-
-static const char* TAG = "HTTPC2Srv";
-
-// -----------------------------------------------------------------------------
-
-HTTPC2Server::HTTPC2Server() : PaxHttpServer()
+class HTTPSrvLampD1 : public PaxHttpServer
 {
-    //
-}
+public:
+    HTTPSrvLampD1(void);
+    virtual ~HTTPSrvLampD1();
+};
 
-HTTPC2Server::~HTTPC2Server(void)
-{
-    //
-}
+#endif

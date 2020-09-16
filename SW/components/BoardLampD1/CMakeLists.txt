@@ -1,6 +1,6 @@
 set(c_SOURCE_FILES
-    "BoardDev34.cpp"
-    "HTTPC2Server.cpp"
+    "BoardLampD1.cpp"
+    "HTTPSrvLampD1.cpp"
 )
 
 set(c_PRIVATE_REQUIREMENTS

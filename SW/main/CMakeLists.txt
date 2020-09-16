@@ -3,7 +3,7 @@ set(c_SOURCE_FILES
 )
 
 set(c_PRIVATE_REQUIREMENTS
-    BoardDev34
+    BoardLampD1
     ESP32BoardManager
     Debouncer
     ESP32SimpleOTA

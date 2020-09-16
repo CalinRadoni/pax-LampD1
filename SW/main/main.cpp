@@ -26,11 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "driver/ledc.h"
 
-// TODO Rename this to BoardLampD1
-#include "BoardDev34.h"
-// TODO The server should be inside BoardDev34
-// TODO Rename this to HTTPSrvLampD1
-#include "HTTPC2Server.h"
+#include "BoardLampD1.h"
 
 #include "DStrip.h"
 #include "DLEDController.h"
@@ -52,11 +48,10 @@ static const uint32_t dTimerPPS = 1000 / dTimerPeriod;
 
 // TODO: Make a class to control the onboard LED based on the driver/ledc API
 
-BoardDev34 board;
+BoardLampD1 board;
 DStrip stripL, stripR;
 DLEDController LEDcontroller;
 ESP32RMTChannel rmt0, rmt1;
-HTTPC2Server httpServer;
 
 uint32_t currentColor = 0xFF00FF;
 uint32_t currentIntensity = 10; // 0 ... 100
@@ -175,8 +170,11 @@ extern "C" {
     static void HTTPTask(void *taskParameter) {
         HTTPCommand httpCmd;
 
+        QueueHandle_t serverQueue;
+        serverQueue = board.GetHttpServerQueue();
+
         for(;;) {
-            if (xQueueReceive(httpServer.serverQueue, &httpCmd, portMAX_DELAY) == pdPASS) {
+            if (xQueueReceive(serverQueue, &httpCmd, portMAX_DELAY) == pdPASS) {
                 switch (httpCmd.command) {
                     case 0: // nop-like command
                         break;
@@ -228,21 +226,15 @@ extern "C" {
     {
         board.CheckApplicationImage();
 
-        esp_err_t err = board.Initialize(&httpServer);
+        esp_err_t err = board.Initialize();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Initialization failed !");
             board.DoNothingForever();
         }
 
-        err = board.StartAP();
+        err = board.StartAPmode();
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start AP mode !");
-            board.DoNothingForever();
-        }
-
-        err = httpServer.StartServer(board.GetOTA());
-        if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to start HTTP server !");
             board.DoNothingForever();
         }
 
