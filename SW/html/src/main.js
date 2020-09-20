@@ -122,6 +122,20 @@ class App {
         xhr.send(f);
     }
 
+    TogglePass(b, id) {
+        let e = document.querySelector('#' + id);
+        if (e == null) return;
+
+        if (e.getAttribute('type') === 'text' ) {
+            e.setAttribute('type', 'password');
+            b.innerText = 'show';
+        }
+        else {
+            e.setAttribute('type', 'text');
+            b.innerText = 'hide';
+        }
+    }
+
     HashHandler() {
         if (location.hash === "#home") {
             homePage.render();

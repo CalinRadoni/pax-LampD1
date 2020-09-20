@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "sdkconfig.h"
 
-const char* TAG = "Init";
+const char* TAG = "main.cpp";
 
 static const uint8_t  cfgOutputPinL = 14;    // the GPIO where LEDs are connected
 static const uint8_t  cfgOutputPinR = 13;    // the GPIO where LEDs are connected
@@ -232,8 +232,7 @@ extern "C" {
             board.DoNothingForever();
         }
 
-        err = board.StartAPmode();
-        if (err != ESP_OK) {
+        if (!board.StartAPmode()) {
             ESP_LOGE(TAG, "Failed to start AP mode !");
             board.DoNothingForever();
         }

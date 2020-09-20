@@ -9,19 +9,47 @@ class ConfigPage {
     render() {
         if (!this.pdiv) return;
 
-        let xstr = '';
+        let s = '<div class="config">' +
+            '<div class="cfgrow"><div class="cfgcell"><h3>Configuration</h3></div></div>' +
+            '<div class="cfgrow">' +
+                this.addTextInput('Name', 'pname', '') +
+                '<div class="cfgcell"></div>' +
+            '</div>' +
+            '<div class="cfgrow">' +
+                this.addTextInput('SSID', 'pap1s', '') +
+                this.addPasswordInput('Password', 'pap1p', '') +
+            '</div>' +
+            '<div class="cfgrow">' +
+                this.addTextInput('Backup SSID', 'pap2s', '') +
+                this.addPasswordInput('Backup password', 'pap2p', '') +
+            '</div>' +
+            '<div class="cfgrow"><div class="cfgcell"><p class="cfgI" id="pversion">2222</p></div></div>' +
+            '<div class="cfgrow">' +
+            '<div class="cfgcell aright">' +
+                '<button class="mrgLeft" onclick="app.GetConfig()">Reload</button>' +
+                '<button class="mrgLeft" onclick="app.SaveConfig()">Save</button>' +
+            '</div></div>' +
+            '</div>';
 
-        xstr = xstr + '<h3>Configuration</h3>';
-        xstr = xstr + 'Version: <input id="pversion" type="text" value=""><br/>';
-        xstr = xstr + 'Name: <input id="pname" type="text" value=""><br/>';
-        xstr = xstr + 'SSID: <input id="pap1s" type="text" value=""><br/>';
-        xstr = xstr + 'Pass: <input id="pap1p" type="password" value=""><br/>';
-        xstr = xstr + 'Backup SSID : <input id="pap2s" type="text" value=""><br/>';
-        xstr = xstr + 'Backup Pass: <input id="pap2p" type="password" value=""><br/>';
-        xstr = xstr + '<input type="button" value="Reload" onclick="GetConfig()" />&nbsp;';
-        xstr = xstr + '<input type="button" value="Save" onclick="SaveConfig()" /><br/>';
-        xstr = xstr + '<span id="csi"></span>';
+        this.pdiv.innerHTML = s;
+    }
 
-        this.pdiv.innerHTML = xstr;
+    addTextInput(label, id, value) {
+        let s = '<div class="cfgcell">' +
+                '<label class="cfgL" for="' + id + '">' + label + '</label>' +
+                '<div class="srow">' +
+                '<input class="scell" type="text" id="' + id + '" value="' + value + '">' +
+                '</div></div>';
+        return s;
+    }
+
+    addPasswordInput(label, id, value) {
+        let s = '<div class="cfgcell">' +
+                '<label class="cfgL" for="' + id + '">' + label + '</label>' +
+                '<div class="srow">' +
+                '<input class="scell" type="password" id="' + id + '" value="' + value + '">' +
+                '<button class="shb" onclick="app.TogglePass(this, &quot;' + id + '&quot;)">show</button>' +
+                '</div></div>';
+        return s;
     }
 }

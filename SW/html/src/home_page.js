@@ -30,9 +30,9 @@ class HomePage {
         let str = '';
 
         str = str + '<h3>Enter color code in hex</h3>';
-        str = str + '<input id="userColor" type="text" value="" maxlength="8" size="8" />&nbsp';
-        str = str + '<input type="button" value="Set" onclick="app.SetColor()" />&nbsp';
-        str = str + '<input type="button" value="Off" onclick="app.TurnOff()" /><br/>';
+        str = str + '<input id="userColor" type="text" value="" maxlength="8" size="8" />';
+        str = str + '<button class="mrgLeft" onclick="app.SetColor()">Set</button>';
+        str = str + '<button class="mrgLeft" onclick="app.TurnOff()">Off</button>';
         str = str + '<h3>Intensity</h3><div><input id="userInt" type="range" class="intSel" min="1" max="100" value="50" oninput="app.SetIntensity()" /></div><br/>';
         str = str + '<h3>RGB</h3><div>' + this.CreateSmallColorWheel(0) + '</div><br/>';
         str = str + '<h3>RYB</h3><div>' + this.CreateSmallColorWheel(1) + '</div>';

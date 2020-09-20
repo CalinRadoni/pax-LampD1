@@ -13,11 +13,11 @@ class FirmwarePage {
 
         xstr = xstr + '<h3>Firmware</h3>';
         xstr = xstr + '<input type="file" id="fwf" accept=".bin" style="display:none" onchange="firmwarePage.SelectFW()" />';
-        xstr = xstr + '<input type="button" id="fwbs" value="Select firmware file" onclick="firmwarePage.ClickFW()" />&nbsp;';
-        xstr = xstr + '<span id="swf"></span><br/><br/>';
-        xstr = xstr + '<input type="button" id="fwbu" value="Upload firmware" onclick="app.UpFW()" disabled />&nbsp;';
-        xstr = xstr + '<span id="swi"></span><br/><br/>';
-        xstr = xstr + '<input type="button" id="fwbr" value="Reset" onclick="app.ResetBoard()" />';
+        xstr = xstr + '<button id="fwbs" onclick="firmwarePage.ClickFW()">Select firmware file</button>';
+        xstr = xstr + '<span class="mrgLeft" id="swf"></span><br/><br/>';
+        xstr = xstr + '<button id="fwbu" onclick="app.UpFW()" disabled>Upload firmware</button>';
+        xstr = xstr + '<span class="mrgLeft" id="swi"></span><br/><br/>';
+        xstr = xstr + '<button id="fwbr" onclick="app.ResetBoard()" disabled>Reset</button>';
 
         this.pdiv.innerHTML = xstr;
     }
@@ -72,6 +72,7 @@ class FirmwarePage {
 
     SetUploadProgress(val) {
         let e = document.getElementById('swi');
+        if (e == null) return;
         e.innerHTML = val + "%";
     }
 }
