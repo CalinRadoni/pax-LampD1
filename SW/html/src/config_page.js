@@ -23,7 +23,7 @@ class ConfigPage {
                 this.addTextInput('Backup SSID', 'pap2s', '') +
                 this.addPasswordInput('Backup password', 'pap2p', '') +
             '</div>' +
-            '<div class="cfgrow"><div class="cfgcell"><p class="cfgI" id="pversion">2222</p></div></div>' +
+            '<div class="cfgrow"><div class="cfgcell"><p class="cfgI" id="pversion"></p></div></div>' +
             '<div class="cfgrow">' +
             '<div class="cfgcell aright">' +
                 '<button class="mrgLeft" onclick="app.GetConfig()">Reload</button>' +
@@ -32,6 +32,8 @@ class ConfigPage {
             '</div>';
 
         this.pdiv.innerHTML = s;
+
+        configuration.toPage();
     }
 
     addTextInput(label, id, value) {

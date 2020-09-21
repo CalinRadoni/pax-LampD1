@@ -1,14 +1,16 @@
-const names = ['version', 'name', 'ap1s', 'ap1p', 'ap2s', 'ap2p', 'ipAddr', 'ipMask', 'ipGateway', 'ipDNS'];
+const configNames = ['version', 'name', 'ap1s', 'ap1p', 'ap2s', 'ap2p', 'ipAddr', 'ipMask', 'ipGateway', 'ipDNS'];
 class Configuration {
     constructor() {
         this.initialize();
     }
 
     initialize() {
-        for (let i = 0; i < names.length; ++i) {
-            this[names[i]] = '';
+        this.myVersion = 2;
+
+        for (let i = 0; i < configNames.length; ++i) {
+            this[configNames[i]] = '';
         }
-        this.version = 2;
+        this.version = this.myVersion;
     }
 
     fromString(jStr) {
@@ -26,7 +28,12 @@ class Configuration {
         for (const [key, value] of Object.entries(this)) {
             let a = document.getElementById('p' + key);
             if (a !== null) {
-                a.value = value;
+                if (key === 'version') {
+                    a.innerHTML = 'Configuration version ' + value;
+                }
+                else {
+                    a.value = value;
+                }
             }
         }
     }
@@ -35,7 +42,12 @@ class Configuration {
         for (const key of Object.keys(this)) {
             let a = document.getElementById('p' + key);
             if (a !== null) {
-                this[key] = a.value;
+                if (key === 'version') {
+                    this.version = this.myVersion;
+                }
+                else {
+                    this[key] = a.value;
+                }
             }
         }
         return JSON.stringify(this);

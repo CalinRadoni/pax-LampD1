@@ -231,11 +231,13 @@ extern "C" {
             ESP_LOGE(TAG, "Initialization failed !");
             board.DoNothingForever();
         }
+        ESP_LOGI(TAG, "Initialized");
 
         if (!board.StartAPmode()) {
             ESP_LOGE(TAG, "Failed to start AP mode !");
             board.DoNothingForever();
         }
+        ESP_LOGI(TAG, "AP Started");
 
         if (!timers.Create()) {
             ESP_LOGE(TAG, "Failed to create the timers object !");
