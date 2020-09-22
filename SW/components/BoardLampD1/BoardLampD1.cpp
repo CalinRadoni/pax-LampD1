@@ -38,12 +38,15 @@ const gpio_num_t GPIO_Out2  = (gpio_num_t)13;
 
 BoardLampD1::BoardLampD1(void) : Board()
 {
-    //
+    configuration = new Configuration();
 }
 
 BoardLampD1::~BoardLampD1(void)
 {
-    //
+    if (configuration != nullptr) {
+        delete configuration;
+        configuration = nullptr;
+    }
 }
 
 esp_err_t BoardLampD1::EarlyInit(void)
@@ -106,7 +109,7 @@ bool BoardLampD1::StartAPmode(void)
     esp_err_t err = StartAP();
     if (err != ESP_OK) return false;
 
-    err = httpServer.StartServer(&simpleOTA);
+    err = httpServer.StartServer(&simpleOTA, configuration);
     if (err != ESP_OK) return false;
 
     return true;
