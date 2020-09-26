@@ -54,6 +54,10 @@ public:
 
     virtual esp_err_t BoardInit(void);
 
+    virtual esp_err_t PostInit(void);
+
+    void StopCurrentWiFiMode(void);
+
     /**
      * @brief Turn off the output power
      */
@@ -73,9 +77,6 @@ public:
     bool OnboardButtonPressed(void);
 
     QueueHandle_t GetHttpServerQueue(void);
-
-    bool StartAPmode(void);
-    void StopAPmode(void);
 
 protected:
     HTTPSrvLampD1 httpServer;

@@ -27,6 +27,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // -----------------------------------------------------------------------------
 
+static const char* TAG = "BoardLampD1";
+
+// -----------------------------------------------------------------------------
+
 const gpio_num_t GPIO_BLED  = (gpio_num_t)2;
 const gpio_num_t GPIO_BOOT  = (gpio_num_t)0;
 
@@ -78,10 +82,47 @@ esp_err_t BoardLampD1::CriticalInit(void)
 
 esp_err_t BoardLampD1::BoardInit(void)
 {
+    esp_err_t res = InitializeWiFi();
+    if (res != ESP_OK) {
+        ESP_LOGE(TAG, "0x%x Failed to initialize WiFi !", res);
+        return res;
+    }
+
     if (!httpServer.Initialize())
         return ESP_FAIL;
 
     return ESP_OK;
+}
+
+esp_err_t BoardLampD1::PostInit(void)
+{
+    esp_err_t res = StartStation();
+    if (res != ESP_OK) {
+        // failed to connect to an AP
+        ESP_LOGW(TAG, "0x%x Failed to connect to an AP", res);
+
+        res = StartAP();
+        if (res != ESP_OK) {
+            ESP_LOGE(TAG, "0x%x Failed to start AP mode !", res);
+            return res;
+        }
+
+        ESP_LOGI(TAG, "Started in AP mode");
+    }
+
+    res = httpServer.StartServer(&simpleOTA, configuration);
+    if (res != ESP_OK) {
+        ESP_LOGE(TAG, "0x%x Failed to start HTTP server !", res);
+        return res;
+    }
+
+    return ESP_OK;
+}
+
+void BoardLampD1::StopCurrentWiFiMode(void)
+{
+    httpServer.StopServer();
+    StopWiFiMode();
 }
 
 void BoardLampD1::PowerOn(void)
@@ -102,21 +143,4 @@ bool BoardLampD1::OnboardButtonPressed(void)
 QueueHandle_t BoardLampD1::GetHttpServerQueue(void)
 {
     return httpServer.GetQueueHandle();
-}
-
-bool BoardLampD1::StartAPmode(void)
-{
-    esp_err_t err = StartAP();
-    if (err != ESP_OK) return false;
-
-    err = httpServer.StartServer(&simpleOTA, configuration);
-    if (err != ESP_OK) return false;
-
-    return true;
-}
-
-void BoardLampD1::StopAPmode(void)
-{
-    httpServer.StopServer();
-    StopWiFi();
 }

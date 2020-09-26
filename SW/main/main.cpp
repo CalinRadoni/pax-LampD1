@@ -231,35 +231,7 @@ extern "C" {
             ESP_LOGE(TAG, "Initialization failed !");
             board.DoNothingForever();
         }
-        ESP_LOGI(TAG, "Initialized");
-
-        uint8_t idx = 0;
-        bool done = false;
-        do {
-            if (board.Connect(idx)) {
-                // connected to an AP
-                ESP_LOGI(TAG, "Connected to AP %d", idx);
-                done = true;
-            }
-            else {
-                ESP_LOGW(TAG, "Failed to connect to AP %d", idx);
-                ++idx;
-            }
-
-            if (idx >= WiFiConfigCnt) done = true;
-        }
-        while (!done);
-
-        if (idx < WiFiConfigCnt) {
-            // failed to connect to an AP
-            ESP_LOGW(TAG, "Failed to connect to an AP");
-
-            if (!board.StartAPmode()) {
-                ESP_LOGE(TAG, "Failed to start AP mode !");
-                board.DoNothingForever();
-            }
-            ESP_LOGI(TAG, "AP Started");
-        }
+        ESP_LOGI(TAG, "Board initialized OK");
 
         if (!timers.Create()) {
             ESP_LOGE(TAG, "Failed to create the timers object !");
