@@ -1,16 +1,15 @@
 
 # Lamp D1
 
-pax-DLED with:
+The software is builded with [ESP-IDF](https://github.com/espressif/esp-idf) **v4.1**.
 
-- two 100 WS2812x LED strips
+It is a lamp based on pax-DLED with two 100 WS2812x LED strips.
 
 TODO: write this README !
 
-## old
+Features:
 
-- continuous SoftAP mode
-- HTTP server for control
+- HTTP server for commands, settings and OTA upgrade
 
 ## Development Environment
 
