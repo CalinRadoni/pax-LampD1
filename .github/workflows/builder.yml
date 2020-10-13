@@ -17,7 +17,9 @@ jobs:
       - name: Cache the ESP-IDF
         uses: actions/cache@v2
         with:
-          path: [~/esp, ~/.espressif]
+          path: |
+            ~/esp
+            ~/.espressif
           key: ${{ runner.os }}-${{ env.esp-idf-ver }}
 
       - name: Install ESP-IDF
