@@ -70,7 +70,7 @@ jobs:
         run: |
           export CodeLib_PATH="${{ github.action_path }}/CodeLibrary"
           source ~/esp/esp-idf/export.sh
-          cd "${{ github.action_path }}/SW"
+          cd "${{ github.action_path }}/main/SW"
           idf.py --version
           idf.py reconfigure
           idf.py app
