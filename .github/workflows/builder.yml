@@ -14,42 +14,42 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: main
+          path: ~/main
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32BoardManager
-          path: CodeLib/ESP32/ESP32BoardManager
+          path: ~/CodeLib/ESP32/ESP32BoardManager
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32DLEDController
-          path: CodeLib/ESP32/ESP32DLEDController
+          path: ~/CodeLib/ESP32/ESP32DLEDController
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32HAL
-          path: CodeLib/ESP32/ESP32HAL
+          path: ~/CodeLib/ESP32/ESP32HAL
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32RMT
-          path: CodeLib/ESP32/ESP32RMT
+          path: ~/CodeLib/ESP32/ESP32RMT
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32SimpleOTA
-          path: CodeLib/ESP32/ESP32SimpleOTA
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/Debouncer
-          path: CodeLib/Generic/Debouncer
+          path: ~/CodeLib/ESP32/ESP32SimpleOTA
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32Timers
-          path: CodeLib/ESP32/ESP32Timers
+          path: ~/CodeLib/ESP32/ESP32Timers
+
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/Debouncer
+          path: ~/CodeLib/Generic/Debouncer
 
       - name: Cache the ESP-IDF
         id: cache-esp-idf
@@ -68,9 +68,9 @@ jobs:
 
       - name: Build
         run: |
-          export CodeLib_PATH="${{ github.action_path }}/CodeLibrary"
+          export CodeLib_PATH="${HOME}/CodeLibrary"
           source ~/esp/esp-idf/export.sh
-          cd "${{ github.action_path }}/main/SW"
+          cd "${HOME}/main/SW"
           idf.py --version
           idf.py reconfigure
           idf.py app
