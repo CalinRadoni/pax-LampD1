@@ -33,6 +33,7 @@ jobs:
         run: |
           source ~/esp/esp-idf/export.sh
           cd SW
-          idf.py reconfigure
-          idf.py app
-          idf.py size
+          idf.py --version
+          # idf.py reconfigure
+          # idf.py app
+          # idf.py size
