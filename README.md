@@ -1,10 +1,8 @@
 # Lamp D1
 
-![Build with ESP-IDF v4.1](https://github.com/CalinRadoni/ESP32HAL/workflows/Build%20with%20ESP-IDF%20v4.1/badge.svg)<br/>
-![Build with ESP-IDF release/v4.1](https://github.com/CalinRadoni/ESP32HAL/workflows/Build%20with%20ESP-IDF%20release%20v4.1/badge.svg)<br/>
-![Build with ESP-IDF release/v4.2](https://github.com/CalinRadoni/ESP32HAL/workflows/Build%20with%20ESP-IDF%20release%20v4.2/badge.svg)
+![Build with ESP-IDF v4.1](https://github.com/CalinRadoni/pax-LampD1/workflows/Build%20with%20ESP-IDF%20v4.1/badge.svg)
 
-The software is builded with [ESP-IDF](https://github.com/espressif/esp-idf) **v4.1**.
+The software should be built with [ESP-IDF](https://github.com/espressif/esp-idf) **v4.1**.
 
 It is a lamp based on pax-DLED with two 100 WS2812x LED strips.
 
