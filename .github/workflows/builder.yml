@@ -7,14 +7,23 @@ jobs:
     name: Builder for the test project
     runs-on: ubuntu-20.04
 
+    env:
+      esp-idf-ver: v4.1
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Cache the ESP-IDF
+        uses: actions/cache@v2
+        with:
+          path: [~/esp, ~/.espressif]
+          key: ${{ runner.os }}-${{ env.esp-idf-ver }}
+
       - name: Install ESP-IDF
         uses: CalinRadoni/esp-idf-v4-action@v2
         with:
-          esp_idf_version: 'v4.1'
+          esp_idf_version: ${{ env.esp-idf-ver }}
 
       - name: Build
         run: |
