@@ -73,7 +73,24 @@ jobs:
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/main/SW"
           touch build.log
+          echo -e "\n## clean\n"
+          idf.py clean >> build.log 2>&1
+          echo -e "\n## reconfigure\n"
           idf.py reconfigure >> build.log 2>&1
+          echo -e "\n## build\n"
           idf.py build >> build.log 2>&1
+          echo -e "\n## size\n"
           idf.py size >> build.log 2>&1
           cat build.log
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: Firmware
+          path: ${{ github.workspace }}/main/SW/build/pax-LampD1.bin"
+
+      - name: Clean the cache
+        run: |
+          source ~/esp/esp-idf/export.sh
+          cd "${{ github.workspace }}/main/SW"
+          idf.py clean
