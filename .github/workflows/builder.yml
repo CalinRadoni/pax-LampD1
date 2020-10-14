@@ -29,27 +29,27 @@ jobs:
       # - uses: actions/checkout@v2
       #   with:
       #     repository: CalinRadoni/ESP32HAL
-      #     path: ~/CodeLib/ESP32/ESP32HAL
+      #     path: CodeLib/ESP32/ESP32HAL
 
       # - uses: actions/checkout@v2
       #   with:
       #     repository: CalinRadoni/ESP32RMT
-      #     path: ~/CodeLib/ESP32/ESP32RMT
+      #     path: CodeLib/ESP32/ESP32RMT
 
       # - uses: actions/checkout@v2
       #   with:
       #     repository: CalinRadoni/ESP32SimpleOTA
-      #     path: ~/CodeLib/ESP32/ESP32SimpleOTA
+      #     path: CodeLib/ESP32/ESP32SimpleOTA
 
       # - uses: actions/checkout@v2
       #   with:
       #     repository: CalinRadoni/ESP32Timers
-      #     path: ~/CodeLib/ESP32/ESP32Timers
+      #     path: CodeLib/ESP32/ESP32Timers
 
       # - uses: actions/checkout@v2
       #   with:
       #     repository: CalinRadoni/Debouncer
-      #     path: ~/CodeLib/Generic/Debouncer
+      #     path: CodeLib/Generic/Debouncer
 
       # - name: Cache the ESP-IDF
       #   id: cache-esp-idf
@@ -68,14 +68,14 @@ jobs:
 
       - name: Build
         run: |
-          # export CodeLib_PATH="${HOME}/CodeLibrary"
-          # source ~/esp/esp-idf/export.sh
           pwd
           ls -al
+          echo ${{ github.workspace }}
+          export CodeLib_PATH="${{ github.workspace }}/CodeLibrary"
+          echo ${CodeLib_PATH}
+          # source ~/esp/esp-idf/export.sh
           sudo apt-get update && sudo apt-get install -y tree
-          tree -L 2
-          cd $HOME
-          tree -L 2
+          tree -L 3
           # cd "${HOME}/main/SW"
           # idf.py --version
           # idf.py reconfigure
