@@ -58,7 +58,7 @@ jobs:
           path: |
             ~/esp
             ~/.espressif
-          key: ${{ runner.os }}-${{ env.esp-idf-ver }}
+          key: Ubuntu-20.04_ESP-IDF_${{ env.esp-idf-ver }}
 
       - name: Install ESP-IDF
         if: steps.cache-esp-idf.outputs.cache-hit != 'true'
@@ -73,4 +73,5 @@ jobs:
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/main/SW"
           idf.py reconfigure
+          idf.py build
           idf.py size
