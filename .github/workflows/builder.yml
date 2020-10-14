@@ -70,8 +70,10 @@ jobs:
         run: |
           export CodeLib_PATH="${HOME}/CodeLibrary"
           source ~/esp/esp-idf/export.sh
-          cd "${HOME}/main/SW"
-          idf.py --version
-          idf.py reconfigure
-          idf.py app
-          idf.py size
+          echo ${CodeLib_PATH}
+          tree -L 2 ${HOME}
+          # cd "${HOME}/main/SW"
+          # idf.py --version
+          # idf.py reconfigure
+          # idf.py app
+          # idf.py size
