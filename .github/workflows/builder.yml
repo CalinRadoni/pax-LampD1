@@ -11,26 +11,20 @@ jobs:
       esp-idf-ver: v4.1
 
     steps:
-      - name: Create destination directories
-        run: |
-          mkdir -p ~main
-          mkdir -p ~/CodeLib/ESP32
-          mkdir -p ~/CodeLib/Generic
-
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: ~/main
+          path: main
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32BoardManager
-          path: ~/CodeLib/ESP32/ESP32BoardManager
+          path: CodeLib/ESP32/ESP32BoardManager
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/ESP32DLEDController
-      #     path: ~/CodeLib/ESP32/ESP32DLEDController
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/ESP32DLEDController
+          path: CodeLib/ESP32/ESP32DLEDController
 
       # - uses: actions/checkout@v2
       #   with:
@@ -57,30 +51,29 @@ jobs:
       #     repository: CalinRadoni/Debouncer
       #     path: ~/CodeLib/Generic/Debouncer
 
-      - name: Cache the ESP-IDF
-        id: cache-esp-idf
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/esp
-            ~/.espressif
-          key: ${{ runner.os }}-${{ env.esp-idf-ver }}
+      # - name: Cache the ESP-IDF
+      #   id: cache-esp-idf
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/esp
+      #       ~/.espressif
+      #     key: ${{ runner.os }}-${{ env.esp-idf-ver }}
 
-      - name: Install ESP-IDF
-        if: steps.cache-esp-idf.outputs.cache-hit != 'true'
-        uses: CalinRadoni/esp-idf-v4-action@v2
-        with:
-          esp_idf_version: ${{ env.esp-idf-ver }}
+      # - name: Install ESP-IDF
+      #   if: steps.cache-esp-idf.outputs.cache-hit != 'true'
+      #   uses: CalinRadoni/esp-idf-v4-action@v2
+      #   with:
+      #     esp_idf_version: ${{ env.esp-idf-ver }}
 
       - name: Build
         run: |
-          export CodeLib_PATH="${HOME}/CodeLibrary"
-          source ~/esp/esp-idf/export.sh
+          # export CodeLib_PATH="${HOME}/CodeLibrary"
+          # source ~/esp/esp-idf/export.sh
           pwd
           ls -al
-          ls -al ..
-          ls -al ../..
-          apt-get update && apt-get install -y tree
+          sudo apt-get update && sudo apt-get install -y tree
+          tree -L 2
           cd $HOME
           tree -L 2
           # cd "${HOME}/main/SW"
