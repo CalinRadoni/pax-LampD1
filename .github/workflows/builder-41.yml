@@ -72,16 +72,15 @@ jobs:
           idf.py --version
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/main/SW"
-          touch build.log
           echo -e "\n## clean\n"
-          idf.py clean >> build.log 2>&1
+          idf.py clean
           echo -e "\n## reconfigure\n"
-          idf.py reconfigure >> build.log 2>&1
+          idf.py reconfigure
           echo -e "\n## build\n"
-          idf.py build >> build.log 2>&1
+          idf.py build
           echo -e "\n## size\n"
-          idf.py size >> build.log 2>&1
-          cat build.log
+          idf.py size
+          ls -al build/
 
       - name: Upload firmware
         uses: actions/upload-artifact@v2
