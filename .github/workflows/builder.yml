@@ -19,65 +19,58 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32BoardManager
-          path: CodeLib/ESP32/ESP32BoardManager
+          path: lib/ESP32/ESP32BoardManager
 
       - uses: actions/checkout@v2
         with:
           repository: CalinRadoni/ESP32DLEDController
-          path: CodeLib/ESP32/ESP32DLEDController
+          path: lib/ESP32/ESP32DLEDController
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/ESP32HAL
-      #     path: CodeLib/ESP32/ESP32HAL
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/ESP32HAL
+          path: lib/ESP32/ESP32HAL
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/ESP32RMT
-      #     path: CodeLib/ESP32/ESP32RMT
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/ESP32RMT
+          path: lib/ESP32/ESP32RMT
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/ESP32SimpleOTA
-      #     path: CodeLib/ESP32/ESP32SimpleOTA
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/ESP32SimpleOTA
+          path: lib/ESP32/ESP32SimpleOTA
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/ESP32Timers
-      #     path: CodeLib/ESP32/ESP32Timers
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/ESP32Timers
+          path: lib/ESP32/ESP32Timers
 
-      # - uses: actions/checkout@v2
-      #   with:
-      #     repository: CalinRadoni/Debouncer
-      #     path: CodeLib/Generic/Debouncer
+      - uses: actions/checkout@v2
+        with:
+          repository: CalinRadoni/Debouncer
+          path: lib/Generic/Debouncer
 
-      # - name: Cache the ESP-IDF
-      #   id: cache-esp-idf
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: |
-      #       ~/esp
-      #       ~/.espressif
-      #     key: ${{ runner.os }}-${{ env.esp-idf-ver }}
+      - name: Cache the ESP-IDF
+        id: cache-esp-idf
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/esp
+            ~/.espressif
+          key: ${{ runner.os }}-${{ env.esp-idf-ver }}
 
-      # - name: Install ESP-IDF
-      #   if: steps.cache-esp-idf.outputs.cache-hit != 'true'
-      #   uses: CalinRadoni/esp-idf-v4-action@v2
-      #   with:
-      #     esp_idf_version: ${{ env.esp-idf-ver }}
+      - name: Install ESP-IDF
+        if: steps.cache-esp-idf.outputs.cache-hit != 'true'
+        uses: CalinRadoni/esp-idf-v4-action@v2
+        with:
+          esp_idf_version: ${{ env.esp-idf-ver }}
 
       - name: Build
         run: |
-          pwd
-          ls -al
-          echo ${{ github.workspace }}
-          export CodeLib_PATH="${{ github.workspace }}/CodeLibrary"
-          echo ${CodeLib_PATH}
-          # source ~/esp/esp-idf/export.sh
-          sudo apt-get update && sudo apt-get install -y tree
-          tree -L 3
-          # cd "${HOME}/main/SW"
-          # idf.py --version
-          # idf.py reconfigure
-          # idf.py app
-          # idf.py size
+          source ~/esp/esp-idf/export.sh
+          idf.py --version
+          export CodeLib_PATH="${{ github.workspace }}/lib"
+          cd "${{ github.workspace }}/main/SW"
+          idf.py reconfigure
+          idf.py size
