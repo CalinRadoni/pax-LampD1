@@ -11,6 +11,12 @@ jobs:
       esp-idf-ver: v4.1
 
     steps:
+      - name: Create destination directories
+        run: |
+          mkdir -p ~main
+          mkdir -p ~/CodeLib/ESP32
+          mkdir -p ~/CodeLib/Generic
+
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -70,11 +76,12 @@ jobs:
         run: |
           export CodeLib_PATH="${HOME}/CodeLibrary"
           source ~/esp/esp-idf/export.sh
-          echo ${CodeLib_PATH}
-          pwd
-          cd "${HOME}"
           pwd
           ls -al
+          ls -al ..
+          ls -al ../..
+          apt-get update && apt-get install -y tree
+          cd $HOME
           tree -L 2
           # cd "${HOME}/main/SW"
           # idf.py --version
