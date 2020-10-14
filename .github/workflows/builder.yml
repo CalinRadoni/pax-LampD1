@@ -21,35 +21,35 @@ jobs:
           repository: CalinRadoni/ESP32BoardManager
           path: ~/CodeLib/ESP32/ESP32BoardManager
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32DLEDController
-          path: ~/CodeLib/ESP32/ESP32DLEDController
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/ESP32DLEDController
+      #     path: ~/CodeLib/ESP32/ESP32DLEDController
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32HAL
-          path: ~/CodeLib/ESP32/ESP32HAL
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/ESP32HAL
+      #     path: ~/CodeLib/ESP32/ESP32HAL
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32RMT
-          path: ~/CodeLib/ESP32/ESP32RMT
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/ESP32RMT
+      #     path: ~/CodeLib/ESP32/ESP32RMT
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32SimpleOTA
-          path: ~/CodeLib/ESP32/ESP32SimpleOTA
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/ESP32SimpleOTA
+      #     path: ~/CodeLib/ESP32/ESP32SimpleOTA
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32Timers
-          path: ~/CodeLib/ESP32/ESP32Timers
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/ESP32Timers
+      #     path: ~/CodeLib/ESP32/ESP32Timers
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/Debouncer
-          path: ~/CodeLib/Generic/Debouncer
+      # - uses: actions/checkout@v2
+      #   with:
+      #     repository: CalinRadoni/Debouncer
+      #     path: ~/CodeLib/Generic/Debouncer
 
       - name: Cache the ESP-IDF
         id: cache-esp-idf
@@ -71,7 +71,11 @@ jobs:
           export CodeLib_PATH="${HOME}/CodeLibrary"
           source ~/esp/esp-idf/export.sh
           echo ${CodeLib_PATH}
-          tree -L 2 ${HOME}
+          pwd
+          cd "${HOME}"
+          pwd
+          ls -al
+          tree -L 2
           # cd "${HOME}/main/SW"
           # idf.py --version
           # idf.py reconfigure
