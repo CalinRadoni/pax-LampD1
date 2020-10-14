@@ -72,6 +72,8 @@ jobs:
           idf.py --version
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/main/SW"
-          idf.py reconfigure
-          idf.py build
-          idf.py size
+          touch build.log
+          idf.py reconfigure >> build.log 2>&1
+          idf.py build >> build.log 2>&1
+          idf.py size >> build.log 2>&1
+          cat build.log
