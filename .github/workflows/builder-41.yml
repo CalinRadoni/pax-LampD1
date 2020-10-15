@@ -77,11 +77,14 @@ jobs:
             rm -rf build
           fi
           echo -e "\n## reconfigure\n"
-          idf.py reconfigure
+          idf.py reconfigure > reconfigure.log
           echo -e "\n## build\n"
-          idf.py build
+          idf.py build > build.log
           echo -e "\n## size\n"
           idf.py size
+          cat reconfigure.log
+          cat build.log
+          echo -e "\n${{ github.ref }}\n"
 
       - name: Create a release
         id: create_release
