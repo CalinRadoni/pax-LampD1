@@ -73,7 +73,9 @@ jobs:
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/main/SW"
           echo -e "\n## clean\n"
-          idf.py clean
+          if ! idf.py fullclean; then
+            rm -rf build
+          fi
           echo -e "\n## reconfigure\n"
           idf.py reconfigure
           echo -e "\n## build\n"
@@ -81,30 +83,33 @@ jobs:
           echo -e "\n## size\n"
           idf.py size
 
-      - name: test
-        run: |
-          pwd
-          echo "---------------------------------------------------------"
-          ls -al ${{ github.workspace }}
-          echo "---------------------------------------------------------"
-          ls -al
-          echo "---------------------------------------------------------"
-          ls -al main/SW/build/
-
-      - name: Upload firmware
-        uses: actions/upload-artifact@v2
+      - name: Create a release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Firmware
-          path: main/SW/build/pax-LampD1.bin"
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: true
+          body: |
+            This release is created by the GitHub Actions workflow
 
-      - name: Upload firmware
-        uses: actions/upload-artifact@v2
+      - name: Upload the firmware
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Firmware-2
-          path: ${{ github.workspace }}/main/SW/build/pax-LampD1.bin"
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ github.workspace }}/main/SW/build/pax-LampD1.bin
+          asset_name: Firmware-${{ github.ref }}
+          asset_content_type: application/octet-stream
 
       - name: Clean the cache
         run: |
           source ~/esp/esp-idf/export.sh
           cd "${{ github.workspace }}/main/SW"
-          idf.py clean
+          if ! idf.py fullclean; then
+            rm -rf build
+          fi
