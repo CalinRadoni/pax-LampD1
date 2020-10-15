@@ -80,13 +80,28 @@ jobs:
           idf.py build
           echo -e "\n## size\n"
           idf.py size
-          ls -al build/
+
+      - name: test
+          run: |
+            pwd
+            echo "---------------------------------------------------------"
+            ls -al ${{ github.workspace }}
+            echo "---------------------------------------------------------"
+            ls -al
+            echo "---------------------------------------------------------"
+            ls -al main/SW/build/
 
       - name: Upload firmware
         uses: actions/upload-artifact@v2
         with:
           name: Firmware
           path: main/SW/build/pax-LampD1.bin"
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v2
+        with:
+          name: Firmware-2
+          path: ${{ github.workspace }}/main/SW/build/pax-LampD1.bin"
 
       - name: Clean the cache
         run: |
