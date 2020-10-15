@@ -73,7 +73,7 @@ jobs:
           source ~/esp/esp-idf/export.sh
           idf.py --version
           export CodeLib_PATH="${{ github.workspace }}/lib"
-          cd "${{ github.workspace }}/{{ env.src-path }}"
+          cd "${{ github.workspace }}/${{ env.src-path }}"
           echo -e "\n## clean\n"
           if ! idf.py fullclean; then
             rm -rf build
@@ -106,14 +106,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{ github.workspace }}/{{ env.src-path }}/build/${{ env.project-name }}.bin
+          asset_path: ${{ github.workspace }}/${{ env.src-path }}/build/${{ env.project-name }}.bin
           asset_name: ${{ env.project-name }}-${{ github.ref }}
           asset_content_type: application/octet-stream
 
       - name: Clean the cache
         run: |
           source ~/esp/esp-idf/export.sh
-          cd "${{ github.workspace }}/{{ env.src-path }}"
+          cd "${{ github.workspace }}/${{ env.src-path }}"
           if ! idf.py fullclean; then
             rm -rf build
           fi
