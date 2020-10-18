@@ -65,8 +65,16 @@ jobs:
           if ! idf.py build >> build.log; then
             cat build.log
           fi
-          echo "-----------------------------------------------------"
-          cat build.log
+
+      - name: Create tag name
+        id: tag-name
+        run: |
+          if [[ ${{ github.ref }} == "refs/heads/main" ]]; then
+            tagName="latest"
+          else
+            tagName="${{ github.ref }}"
+          fi
+          echo "::set-output name=new-tag::$tagName"
 
       - name: Create a release
         id: create_release
@@ -74,8 +82,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ steps.tag-name.outputs.new-tag }}
+          release_name: Release ${{ steps.tag-name.outputs.new-tag }}
           draft: false
           prerelease: true
           body: |
