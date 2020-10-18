@@ -4,54 +4,33 @@ on: [push]
 
 jobs:
   builder:
-    name: Builder for the test project
+    name: Builder for pax-LampD1
     runs-on: ubuntu-20.04
 
     env:
       esp-idf-ver: v4.1
       project-name: pax-LampD1
-      src-path: main/SW
+      src-path: app/SW
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
         with:
-          path: main
+          path: app
 
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32BoardManager
-          path: lib/ESP32/ESP32BoardManager
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32DLEDController
-          path: lib/ESP32/ESP32DLEDController
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32HAL
-          path: lib/ESP32/ESP32HAL
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32RMT
-          path: lib/ESP32/ESP32RMT
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32SimpleOTA
-          path: lib/ESP32/ESP32SimpleOTA
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/ESP32Timers
-          path: lib/ESP32/ESP32Timers
-
-      - uses: actions/checkout@v2
-        with:
-          repository: CalinRadoni/Debouncer
-          path: lib/Generic/Debouncer
+      - name: Create the code library
+        run: |
+          mkdir -p "${{ github.workspace }}/lib/ESP32"
+          cd "${{ github.workspace }}/lib/ESP32"
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32BoardManager.git
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32DLEDController.git
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32HAL.git
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32RMT.git
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32SimpleOTA.git
+          git clone --depth 1 https://github.com/CalinRadoni/ESP32Timers.git
+          mkdir -p "${{ github.workspace }}/lib/Generic"
+          cd "${{ github.workspace }}/lib/Generic"
+          git clone --depth 1 https://github.com/CalinRadoni/Debouncer.git
 
       - name: Cache the ESP-IDF
         id: cache-esp-idf
@@ -60,7 +39,7 @@ jobs:
           path: |
             ~/esp
             ~/.espressif
-          key: Ubuntu-20.04_ESP-IDF_${{ env.esp-idf-ver }}
+          key: ESP-IDF_${{ env.esp-idf-ver }}_on_Ubuntu-20.04
 
       - name: Install ESP-IDF
         if: steps.cache-esp-idf.outputs.cache-hit != 'true'
@@ -68,16 +47,16 @@ jobs:
         with:
           esp_idf_version: ${{ env.esp-idf-ver }}
 
+      - name: Install ninja-build
+        if: steps.cache-esp-idf.outputs.cache-hit == 'true'
+        run: sudo apt-get install -y ninja-build
+
       - name: Build
         run: |
           source ~/esp/esp-idf/export.sh
           idf.py --version
           export CodeLib_PATH="${{ github.workspace }}/lib"
           cd "${{ github.workspace }}/${{ env.src-path }}"
-          echo -e "\n## clean\n"
-          if ! idf.py fullclean; then
-            rm -rf build
-          fi
           echo -e "\n## reconfigure\n"
           if ! idf.py reconfigure > build.log; then
             cat build.log
@@ -86,6 +65,8 @@ jobs:
           if ! idf.py build >> build.log; then
             cat build.log
           fi
+          echo "-----------------------------------------------------"
+          cat build.log
 
       - name: Create a release
         id: create_release
@@ -109,11 +90,3 @@ jobs:
           asset_path: ${{ github.workspace }}/${{ env.src-path }}/build/${{ env.project-name }}.bin
           asset_name: ${{ env.project-name }}-${{ github.ref }}
           asset_content_type: application/octet-stream
-
-      - name: Clean the cache
-        run: |
-          source ~/esp/esp-idf/export.sh
-          cd "${{ github.workspace }}/${{ env.src-path }}"
-          if ! idf.py fullclean; then
-            rm -rf build
-          fi
