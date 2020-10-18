@@ -96,5 +96,5 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ github.workspace }}/${{ env.src-path }}/build/${{ env.project-name }}.bin
-          asset_name: ${{ env.project-name }}-${{ github.ref }}
+          asset_name: ${{ env.project-name }}-${{ steps.tag-name.outputs.new-tag }}
           asset_content_type: application/octet-stream
