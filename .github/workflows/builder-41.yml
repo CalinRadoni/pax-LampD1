@@ -69,12 +69,37 @@ jobs:
       - name: Create tag name
         id: tag-name
         run: |
-          if [[ ${{ github.ref }} == "refs/heads/main" ]]; then
-            tagName="latest"
-          else
-            tagName="${{ github.ref }}"
-          fi
+          # if [[ ${{ github.ref }} == "refs/heads/main" ]]; then
+          #   tagName="latest"
+          # else
+          #   tagName="${{ github.ref }}"
+          # fi
+          tagName="latest"
           echo "::set-output name=new-tag::$tagName"
+
+      - name: Delete previous release
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            // find the release id
+            const response = await github.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: "${{ steps.tag-name.outputs.new-tag }}"
+            })
+            // delete the release
+            github.repos.deleteRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: response.data.id
+            })
+            // delete the tag
+            octokit.git.deleteRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: "${{ steps.tag-name.outputs.new-tag }}"
+            })
 
       - name: Create a release
         id: create_release
