@@ -5,7 +5,7 @@ on: [push]
 jobs:
   builder:
     name: Builder for pax-LampD1
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     env:
       esp-idf-ver: v4.1
