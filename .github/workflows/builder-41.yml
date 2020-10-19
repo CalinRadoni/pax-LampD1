@@ -39,7 +39,7 @@ jobs:
           path: |
             ~/esp
             ~/.espressif
-          key: ESP-IDF_${{ env.esp-idf-ver }}_on_Ubuntu-20.04
+          key: ESP-IDF_${{ env.esp-idf-ver }}_on_Ubuntu-latest
 
       - name: Install ESP-IDF
         if: steps.cache-esp-idf.outputs.cache-hit != 'true'
