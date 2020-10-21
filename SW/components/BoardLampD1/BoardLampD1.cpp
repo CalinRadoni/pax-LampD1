@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_netif.h"
+#include "mdns.h"
 
 #include "driver/gpio.h"
 
@@ -114,6 +116,11 @@ esp_err_t BoardLampD1::PostInit(void)
     if (res != ESP_OK) {
         ESP_LOGE(TAG, "0x%x Failed to start HTTP server !", res);
         return res;
+    }
+
+    res = InitializeMDNS();
+    if (res == ESP_OK) {
+        mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
     }
 
     return ESP_OK;
