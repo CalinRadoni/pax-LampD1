@@ -1,11 +1,12 @@
-const configNames = ['version', 'name', 'ap1s', 'ap1p', 'ap2s', 'ap2p', 'ipAddr', 'ipMask', 'ipGateway', 'ipDNS'];
+const configNames = ['version', 'name', 'pass', 'ap1s', 'ap1p', 'ap2s', 'ap2p', 'ipAddr', 'ipMask', 'ipGateway', 'ipDNS'];
+const configVersion = 3;
 class Configuration {
     constructor() {
         this.initialize();
     }
 
     initialize() {
-        this.myVersion = 2;
+        this.myVersion = configVersion;
 
         for (let i = 0; i < configNames.length; ++i) {
             this[configNames[i]] = '';

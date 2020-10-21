@@ -13,7 +13,7 @@ class ConfigPage {
             '<div class="cfgrow"><div class="cfgcell"><h3>Configuration</h3></div></div>' +
             '<div class="cfgrow">' +
                 this.addTextInput('Name', 'pname', '') +
-                '<div class="cfgcell"></div>' +
+                this.addPasswordInput('Pass', 'ppass', '') +
             '</div>' +
             '<div class="cfgrow">' +
                 this.addTextInput('SSID', 'pap1s', '') +
