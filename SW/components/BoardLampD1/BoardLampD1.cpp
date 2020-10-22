@@ -98,7 +98,9 @@ esp_err_t BoardLampD1::BoardInit(void)
 
 esp_err_t BoardLampD1::PostInit(void)
 {
-    esp_err_t res = StartStation();
+    esp_err_t res;
+
+    res = StartStation();
     if (res != ESP_OK) {
         // failed to connect to an AP
         ESP_LOGW(TAG, "0x%x Failed to connect to an AP", res);
@@ -114,13 +116,19 @@ esp_err_t BoardLampD1::PostInit(void)
 
     res = httpServer.StartServer(&simpleOTA, configuration);
     if (res != ESP_OK) {
-        ESP_LOGE(TAG, "0x%x Failed to start HTTP server !", res);
+        ESP_LOGE(TAG, "0x%x Failed to start the HTTP server !", res);
         return res;
     }
 
     res = InitializeMDNS();
-    if (res == ESP_OK) {
-        mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+    if (res != ESP_OK) {
+        return res;
+    }
+
+    res = mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+    if (res != ESP_OK) {
+        ESP_LOGE(TAG, "0x%x mdns_service_add _http !", res);
+        return res;
     }
 
     return ESP_OK;
