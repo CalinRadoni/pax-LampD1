@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_system.h"
@@ -28,9 +29,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "BoardLampD1.h"
 
+#include "esp32_hal_timers.h"
 #include "DStrip.h"
 #include "DLEDController.h"
-#include "ESP32Timers.h"
 
 #include "sdkconfig.h"
 
@@ -43,27 +44,29 @@ static const uint8_t  cfgChannelR   = 1;     // ESP32 RMT's channel [0 ... 7]
 static const uint16_t cfgLEDcount   = 80;    // number of LEDS
 static const uint8_t  cfgMaxCCV     = 32;    // maximum value allowed for color component
 
-static const uint32_t dTimerPeriod = 5; // ms
-static const uint32_t dTimerPPS = 1000 / dTimerPeriod;
+static const uint32_t timer00period = 5; // ms
+static const uint32_t timer00ticks100ms  =  100 / timer00period; // ticks for 100 ms
+static const uint32_t timer00ticks1000ms = 1000 / timer00period; // ticks for 1 second
 
 // TODO: Make a class to control the onboard LED based on the driver/ledc API
 
 BoardLampD1 board;
+esp32hal::Timers timers;
 DStrip stripL, stripR;
 DLEDController LEDcontroller;
 ESP32RMTChannel rmt0, rmt1;
 
+uint32_t animationID = 1;
 uint32_t currentColor = 0xFF00FF;
 uint32_t currentIntensity = 10; // 0 ... 100
 
-extern "C" {
+static SemaphoreHandle_t displayMutex = NULL;
+static TaskHandle_t xDisplayTask = NULL;
+static TaskHandle_t xAnimationTask = NULL;
+static TaskHandle_t xHTTPHandlerTask = NULL;
+static TaskHandle_t xLoopTask = NULL;
 
-    void delay_ms(uint32_t ms)
-    {
-        if (ms != 0) {
-            vTaskDelay(ms / portTICK_PERIOD_MS);
-        }
-    }
+extern "C" {
 
     uint32_t RGBadjusted (uint32_t val) {
         uint32_t r, g, b;
@@ -82,13 +85,66 @@ extern "C" {
         return (r << 16) | (g << 8) | b;
     }
 
-    static void TimerTask(void *taskParameter) {
-        uint32_t animationTick = 0;
+    static void LoopTask(void *taskParameter) {
         uint32_t secondTick = 0;
-        ESP32TimerEvent timerEvent;
-        uint16_t step = 0;
+        uint32_t timerTicks = 0;
         uint16_t keyPressCount = 0;
 
+        uint32_t tens = 0;
+
+        board.debouncer.SetUpdateTime(timer00period);
+        board.debouncer.SetKeyRepeat(500, 50);
+
+        const TickType_t xBlockTime = 1000 / portTICK_PERIOD_MS; // set timeout to 1000ms
+        for(;;) {
+            uint32_t notifiedValue = ulTaskNotifyTake(pdTRUE, xBlockTime);
+            if (notifiedValue == 0) {
+                // timeout
+            }
+            else {
+                // read and debounce onboard button
+                board.debouncer.Update(board.OnboardButtonPressed());
+
+                timerTicks += notifiedValue;
+                if (timerTicks >= timer00ticks100ms) {
+                    timerTicks -= timer00ticks100ms; // at least 100 ms passed
+
+                    if (board.debouncer.IsDown()) {
+                        // on-board button is pressed
+                        keyPressCount = board.debouncer.GetCurrentPressCount();
+                        if (keyPressCount != 0) {
+                            // do something with it, if you want
+                        }
+                    }
+                    else {
+                        // on-board button is not pressed
+                        if (keyPressCount != 0) {
+                            // on-board button was just released, do something with keyPressCount, if you want
+
+                            keyPressCount = 0; // set this to 0 for next iterations
+                        }
+                    }
+                }
+
+                secondTick += notifiedValue;
+                if (secondTick >= timer00ticks1000ms) {
+                    secondTick -= timer00ticks1000ms; // at least 1 second passed
+                    tens++;
+                    if (tens >= 10) {
+                        tens -= 10;
+                        if (board.esp32.RefreshSystemState())
+                            board.esp32.PrintTaskStatus();
+                    }
+                }
+            }
+        }
+
+        // the next lines are here only for "completion"
+        timers.DisableTimer(timer_group_t::TIMER_GROUP_0, timer_idx_t::TIMER_0);
+        vTaskDelete(NULL);
+    }
+
+    static void DisplayTask(void *taskParameter) {
         stripL.Create(3, cfgLEDcount, cfgMaxCCV);
         stripR.Create(3, cfgLEDcount, cfgMaxCCV);
         rmt0.Initialize((rmt_channel_t)cfgChannelL, (gpio_num_t)cfgOutputPinL, cfgLEDcount * 24);
@@ -96,74 +152,94 @@ extern "C" {
         rmt1.Initialize((rmt_channel_t)cfgChannelR, (gpio_num_t)cfgOutputPinR, cfgLEDcount * 24);
         rmt1.ConfigureForWS2812x();
 
+        LEDcontroller.SetMutex(displayMutex);
         LEDcontroller.SetLEDType(LEDType::WS2812);
         LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
         LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
 
-        board.PowerOn();
-
-        board.debouncer.SetUpdateTime(dTimerPeriod);
-        board.debouncer.SetKeyRepeat(500, 50);
-
-        while (step < 6 * stripL.description.stripLen) {
-            stripL.MovePixel(step);
-            stripR.MovePixel(step);
-            step++;
-            LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-            LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
-            delay_ms(20);
-        }
-
-        for (uint16_t i = 0; i < cfgLEDcount; ++i) {
-            stripL.SetPixel(i, 0);
-            stripR.SetPixel(i, 0);
-        }
-        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
-
-        step = 0;
+        const TickType_t xBlockTime = 1000 / portTICK_PERIOD_MS; // set timeout to 1000ms
         for(;;) {
-            if (xQueueReceive(timers.timerQueue, &timerEvent, portMAX_DELAY) == pdPASS) {
-                if (timerEvent.group == timer_group_t::TIMER_GROUP_0) {
-                    if (timerEvent.index == timer_idx_t::TIMER_0) {
-                        // read and debounce onboard button
-                        board.debouncer.Update(board.OnboardButtonPressed());
+            uint32_t res = ulTaskNotifyTake(pdTRUE, xBlockTime);
+            if (res == 0) {
+                // timeout
+            }
+            else {
+                LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
+                LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+            }
+        }
+        vTaskDelete(NULL);
+    }
 
-                        animationTick++;
-                        if (animationTick >= 20) {
-                            animationTick -= 20;
-                            if (board.debouncer.IsDown()) {
-                                // on-board button is pressed
-                                keyPressCount = board.debouncer.GetCurrentPressCount();
-                                stripL.SetColorByIndex(0, step + keyPressCount);
-                                stripR.SetColorByIndex(0, step + keyPressCount);
-                            }
-                            else {
-                                // on-board button is not pressed
-                                if (keyPressCount != 0) {
-                                    // on-board button was just released
-                                    step += keyPressCount;
-                                    keyPressCount = 0;
+    static void AnimationTask(void *taskParameter) {
+        uint16_t step = 0;
+        uint32_t nextInterval;
+        const TickType_t xBlockTime = 1000 / portTICK_PERIOD_MS; // set timeout to 1000ms
+        for(;;) {
+            uint32_t res = ulTaskNotifyTake(pdTRUE, xBlockTime);
+            if (res == 0) {
+                // timeout
+            }
+            else {
+                // set next timer alarm period
+                switch (animationID) {
+                    case 0 : nextInterval = 250; break;
+                    case 1 : nextInterval = 20; break;
+                    case 2 : nextInterval = 50; break;
+                    default: nextInterval = 250; break;
+                }
+                timers.RestartTimer(0, 1, nextInterval);
+
+                if (displayMutex != NULL) {
+                    if (xSemaphoreTake(displayMutex, xBlockTime) == pdTRUE) {
+                        // compute current frame
+                        switch (animationID) {
+                            case 0:
+                                {
+                                    uint32_t adj = RGBadjusted(currentColor);
+                                    for (uint16_t i = 0; i < cfgLEDcount; ++i) {
+                                        stripL.SetPixel(i, adj);
+                                        stripR.SetPixel(i, adj);
+                                    }
                                 }
-                            }
+                                break;
 
-                            // Display a frame
-                            LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-                            LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+                            case 1:
+                                stripL.MovePixel(step);
+                                stripR.MovePixel(step);
+                                step++;
+                                if (step >= (6 * stripL.description.stripLen)) {
+                                    step = 0;
+                                    animationID = 2;
+                                }
+                                break;
+
+                            case 2:
+                                stripL.RainbowStep(step);
+                                stripR.RainbowStep(1024 - step);
+                                step++;
+                                if (step >= 1024) {
+                                    step = 0;
+                                    currentColor = 0xFF00FF;
+                                    currentIntensity = 2;
+                                    animationID = 0;
+                                }
+                                break;
+
+                            default: break;
                         }
 
-                        secondTick++;
-                        if (secondTick >= dTimerPPS) {
-                            secondTick -= dTimerPPS;
-                        }
+                        xSemaphoreGive(displayMutex);
                     }
+                }
+
+                // notify the display task
+                if (xDisplayTask != NULL) {
+                    xTaskNotifyGive(xDisplayTask);
                 }
             }
         }
-
-        // the next lines are here only for "completion"
-        timers.DestroyTimer(timer_group_t::TIMER_GROUP_0, timer_idx_t::TIMER_0);
-        timers.Destroy();
+        timers.DisableTimer(0, 1);
         vTaskDelete(NULL);
     }
 
@@ -179,33 +255,16 @@ extern "C" {
                     case 0: // nop-like command
                         break;
                     case 1:
-                        for (uint16_t i = 0; i < cfgLEDcount; i++) {
-                            stripL.SetPixel(i, 0);
-                            stripR.SetPixel(i, 0);
-                        }
-                        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-                        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+                        currentColor = 0;
+                        animationID = 0;
                         break;
                     case 2:
-                        uint32_t adj;
                         currentColor = httpCmd.data;
-                        adj = RGBadjusted(currentColor);
-                        for (uint16_t i = 0; i < cfgLEDcount; i++) {
-                            stripL.SetPixel(i, adj);
-                            stripR.SetPixel(i, adj);
-                        }
-                        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-                        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+                        animationID = 0;
                         break;
                     case 3:
                         currentIntensity = httpCmd.data;
-                        adj = RGBadjusted(currentColor);
-                        for (uint16_t i = 0; i < cfgLEDcount; i++) {
-                            stripL.SetPixel(i, adj);
-                            stripR.SetPixel(i, adj);
-                        }
-                        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-                        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+                        animationID = 0;
                         break;
 
                     case 0xFE:
@@ -233,33 +292,58 @@ extern "C" {
         }
         ESP_LOGI(TAG, "Board initialized OK");
 
-        if (!timers.Create()) {
-            ESP_LOGE(TAG, "Failed to create the timers object !");
-            board.DoNothingForever();
-        }
+        board.PowerOn();
 
-        if (!timers.CreateTimer(timer_group_t::TIMER_GROUP_0, timer_idx_t::TIMER_0, dTimerPeriod, true, false)) {
-            ESP_LOGE(TAG, "Failed to create the timer G0T0 !");
-            board.DoNothingForever();
-        }
-
-        TaskHandle_t xHandleTimerTask = NULL;
-        xTaskCreate(TimerTask, "Timer handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 5, &xHandleTimerTask);
-        if (xHandleTimerTask != NULL) {
-            ESP_LOGI(TAG, "Timer task created.");
+        displayMutex = xSemaphoreCreateMutex();
+        if (displayMutex != NULL) {
+            ESP_LOGI(TAG, "Display mutex created.");
         }
         else {
-            ESP_LOGE(TAG, "Failed to create the timer task !");
+            ESP_LOGE(TAG, "Failed to create the display mutex !");
             board.DoNothingForever();
         }
 
-        TaskHandle_t xHandleHTTP = NULL;
-        xTaskCreate(HTTPTask, "HTTP command handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 1, &xHandleHTTP);
-        if (xHandleHTTP != NULL) {
+        xTaskCreate(DisplayTask, "Display task", 2048, NULL, uxTaskPriorityGet(NULL) + 3, &xDisplayTask);
+        if (xDisplayTask != NULL) {
+            ESP_LOGI(TAG, "Display task created.");
+        }
+        else {
+            ESP_LOGE(TAG, "Failed to create the display task !");
+            board.DoNothingForever();
+        }
+
+        xTaskCreate(AnimationTask, "Animation task", 2048, NULL, uxTaskPriorityGet(NULL) + 5, &xAnimationTask);
+        if (xAnimationTask != NULL) {
+            ESP_LOGI(TAG, "Animation task created.");
+        }
+        else {
+            ESP_LOGE(TAG, "Failed to create the animation task !");
+            board.DoNothingForever();
+        }
+        if (!timers.EnableTimer(xAnimationTask, 0, 1, 100, false, true)) {
+            ESP_LOGE(TAG, "Failed to enable the timer 0:1 !");
+            board.DoNothingForever();
+        }
+
+        xTaskCreate(HTTPTask, "HTTP command handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 1, &xHTTPHandlerTask);
+        if (xHTTPHandlerTask != NULL) {
             ESP_LOGI(TAG, "HTTP command handling task created.");
         }
         else {
             ESP_LOGE(TAG, "Failed to create the HTTP command handling task !");
+            board.DoNothingForever();
+        }
+
+        xTaskCreate(LoopTask, "Loop task", 4096, NULL, uxTaskPriorityGet(NULL) + 2, &xLoopTask);
+        if (xLoopTask != NULL) {
+            ESP_LOGI(TAG, "Loop task created.");
+        }
+        else {
+            ESP_LOGE(TAG, "Failed to create the Loop task !");
+            board.DoNothingForever();
+        }
+        if (!timers.EnableTimer(xLoopTask, 0, 0, timer00period, true, false)) {
+            ESP_LOGE(TAG, "Failed to enable the timer 0:0 !");
             board.DoNothingForever();
         }
     }
