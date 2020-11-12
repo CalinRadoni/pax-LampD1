@@ -8,7 +8,6 @@ set(c_PRIVATE_REQUIREMENTS
     Debouncer
     ESP32SimpleOTA
     ESP32DLEDController
-    ESP32Timers
     esp_http_server
 )
 
