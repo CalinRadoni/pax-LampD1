@@ -16,10 +16,6 @@ project(pax-LampD1)
 
 # Configuration checks
 
-if (NOT CONFIG_FREERTOS_HZ EQUAL 100)
-    message(FATAL_ERROR "This project requires a 100 Hz FreeRTOS tick rate.")
-endif()
-
 ## Configuration checks - partitions
 
 if (NOT CONFIG_PARTITION_TABLE_CUSTOM)
