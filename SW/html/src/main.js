@@ -1,5 +1,34 @@
+var boardInfo  = new BoardInfo();
+var statusInfo = new StatusInfo();
+
 class App {
     constructor(logger) {
+        //
+    }
+
+    InfoFromString(jStr) {
+        boardInfo.setFromString(jStr);
+        this.toPage();
+        systemPage.updateInfo();
+    }
+
+    toPage() {
+        document.title = boardInfo.get('title');
+
+        let a = document.getElementById('title');
+        if (a !== null)
+            a.innerHTML = boardInfo.get('title');
+
+        a = document.getElementById('tagline');
+        if (a !== null) {
+            a.innerHTML = boardInfo.get('tagline');
+            a.hidden = (a.innerHTML.length > 0);
+        }
+    }
+
+    StatusFromString(jStr) {
+        statusInfo.setFromString(jStr);
+        homePage.updateInfo();
     }
 
     Initialize() {
@@ -8,9 +37,16 @@ class App {
         let appel = document.getElementById('APP');
         homePage.set_parent_div(appel);
         configPage.set_parent_div(appel);
-        firmwarePage.set_parent_div(appel);
+        systemPage.set_parent_div(appel);
 
+        systemPage.set_info_object(boardInfo);
+        homePage.set_status_object(statusInfo);
+
+        this.GetInfo();
         this.GetConfig();
+        this.GetStatus();
+
+        this.statusTimer = setInterval(this.GetStatus(), 2000);
 
         this.HashHandler();
         window.addEventListener('hashchange', this.HashHandler, false);
@@ -46,6 +82,32 @@ class App {
             }
         };
         xhr.open("GET", "/config.json", true);
+        xhr.send();
+    }
+
+    GetInfo() {
+        let xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.readyState === xhr.DONE) {
+                if (xhr.status === 200) {
+                    app.InfoFromString(xhr.responseText);
+                }
+            }
+        };
+        xhr.open("GET", "/info.json", true);
+        xhr.send();
+    }
+
+    GetStatus() {
+        let xhr = new XMLHttpRequest();
+        xhr.onload = function() {
+            if (xhr.readyState === xhr.DONE) {
+                if (xhr.status === 200) {
+                    app.StatusFromString(xhr.responseText);
+                }
+            }
+        };
+        xhr.open("GET", "/status.json", true);
         xhr.send();
     }
 
@@ -93,7 +155,7 @@ class App {
     }
 
     UpFW() {
-        let f = firmwarePage.GetSelectedFile();
+        let f = systemPage.GetSelectedFile();
         if (f == null) return;
 
         let xhr = new XMLHttpRequest();
@@ -105,18 +167,18 @@ class App {
                 else {
                     logger.error(xhr.status + " " + xhr.responseText);
                 }
-                firmwarePage.EndUpload();
+                systemPage.EndUpload();
             }
         };
 
         xhr.upload.addEventListener("progress", function(ev) {
             if (ev.lengthComputable) {
                 let percent = 100 * ev.loaded / ev.total | 0;
-                firmwarePage.SetUploadProgress(percent);
+                systemPage.SetUploadProgress(percent);
             }
         });
 
-        firmwarePage.BeginUpload();
+        systemPage.BeginUpload();
 
         xhr.open("POST", "/update", true);
         xhr.send(f);
@@ -128,11 +190,11 @@ class App {
 
         if (e.getAttribute('type') === 'text' ) {
             e.setAttribute('type', 'password');
-            b.innerText = 'show';
+            b.innerText = 'O';
         }
         else {
             e.setAttribute('type', 'text');
-            b.innerText = 'hide';
+            b.innerText = 'X';
         }
     }
 
@@ -147,8 +209,8 @@ class App {
             return;
         }
 
-        if (location.hash === "#firmware") {
-            firmwarePage.render();
+        if (location.hash === "#system") {
+            systemPage.render();
             return;
         }
 
@@ -157,9 +219,10 @@ class App {
     }
 }
 
-var logger = new Logger();
-var homePage = new HomePage();
+var logger        = new Logger();
+var homePage      = new HomePage();
 var configuration = new Configuration();
-var configPage = new ConfigPage();
+var configPage    = new ConfigPage();
+
 var app = new App();
 app.Initialize();

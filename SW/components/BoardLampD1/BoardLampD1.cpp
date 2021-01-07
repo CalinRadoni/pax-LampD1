@@ -1,6 +1,6 @@
 /**
-This file is part of pax-devices (https://github.com/CalinRadoni/pax-devices)
-Copyright (C) 2019+ by Calin Radoni
+This file is part of pax-LampD1 (https://github.com/CalinRadoni/pax-LampD1)
+Copyright (C) 2019 by Calin Radoni
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -90,17 +90,12 @@ esp_err_t BoardLampD1::BoardInit(void)
         return res;
     }
 
-    if (!httpServer.Initialize())
-        return ESP_FAIL;
-
     return ESP_OK;
 }
 
 esp_err_t BoardLampD1::PostInit(void)
 {
-    esp_err_t res;
-
-    res = StartStation();
+    esp_err_t res = StartStation(3);
     if (res != ESP_OK) {
         // failed to connect to an AP
         ESP_LOGW(TAG, "0x%x Failed to connect to an AP", res);
@@ -113,41 +108,52 @@ esp_err_t BoardLampD1::PostInit(void)
 
         ESP_LOGI(TAG, "Started in AP mode");
     }
+    else {
+        ESP_LOGI(TAG, "Started in Station mode");
+    }
 
-    res = httpServer.StartServer(&simpleOTA, configuration);
+    res = InitializeMDNS();
+    if (res != ESP_OK) return res;
+
+    res = StartTheServers();
+    if (res != ESP_OK) return res;
+
+    res = ConfigureMDNS();
+    if (res != ESP_OK) return res;
+
+    return ESP_OK;
+}
+
+esp_err_t BoardLampD1::StartTheServers(void)
+{
+    if (!httpServer.Initialize()) {
+        return ESP_FAIL;
+    }
+
+    esp_err_t res = httpServer.StartServer(&simpleOTA, configuration, &boardInfo);
     if (res != ESP_OK) {
         ESP_LOGE(TAG, "0x%x Failed to start the HTTP server !", res);
         return res;
     }
+    ESP_LOGI(TAG, "HTTP Server started");
 
-    res = InitializeMDNS();
-    if (res != ESP_OK) {
-        return res;
-    }
+    return ESP_OK;
+}
 
-    res = mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+void BoardLampD1::StopTheServers(void)
+{
+    httpServer.StopServer();
+}
+
+esp_err_t BoardLampD1::ConfigureMDNS(void)
+{
+    esp_err_t res = mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
     if (res != ESP_OK) {
         ESP_LOGE(TAG, "0x%x mdns_service_add _http !", res);
         return res;
     }
 
     return ESP_OK;
-}
-
-void BoardLampD1::StopCurrentWiFiMode(void)
-{
-    httpServer.StopServer();
-    StopWiFiMode();
-}
-
-void BoardLampD1::PowerOn(void)
-{
-    gpio_set_level(GPIO_Power, 1);
-}
-
-void BoardLampD1::PowerOff(void)
-{
-    gpio_set_level(GPIO_Power, 0);
 }
 
 bool BoardLampD1::OnboardButtonPressed(void)
@@ -158,4 +164,13 @@ bool BoardLampD1::OnboardButtonPressed(void)
 QueueHandle_t BoardLampD1::GetHttpServerQueue(void)
 {
     return httpServer.GetQueueHandle();
+}
+
+void BoardLampD1::RefreshSystemState(bool printResult)
+{
+    if (cpu.RefreshSystemState()) {
+        if (printResult) {
+            cpu.PrintTaskStatus();
+        }
+    }
 }

@@ -1,6 +1,6 @@
 /**
-This file is part of pax-devices (https://github.com/CalinRadoni/pax-devices)
-Copyright (C) 2019+ by Calin Radoni
+This file is part of pax-LampD1 (https://github.com/CalinRadoni/pax-LampD1)
+Copyright (C) 2019 by Calin Radoni
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -56,17 +56,9 @@ public:
 
     virtual esp_err_t PostInit(void);
 
-    void StopCurrentWiFiMode(void);
-
-    /**
-     * @brief Turn off the output power
-     */
-    void PowerOn(void);
-
-    /**
-     * @brief Turn on the output power
-     */
-    void PowerOff(void);
+    esp_err_t StartTheServers(void);
+    void StopTheServers(void);
+    esp_err_t ConfigureMDNS(void);
 
     /** To be used with the onboard button */
     Debouncer debouncer;
@@ -76,11 +68,24 @@ public:
      */
     bool OnboardButtonPressed(void);
 
+    /**
+     * @brief The server queue is used to read the commands received by the HTTP server
+     */
     QueueHandle_t GetHttpServerQueue(void);
 
-protected:
+    /**
+     * @brief Refresh system state
+     *
+     * @param printResult Prints system state after refresh
+     */
+    void RefreshSystemState(bool printResult);
+
+    /**
+     * The HTTP server is public to ease the transfer of data from main app to it
+     */
     HTTPSrvLampD1 httpServer;
 
+protected:
 private:
 };
 

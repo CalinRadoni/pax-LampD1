@@ -1,6 +1,6 @@
 /**
-This file is part of pax-devices (https://github.com/CalinRadoni/pax-devices)
-Copyright (C) 2019+ by Calin Radoni
+This file is part of pax-LampD1 (https://github.com/CalinRadoni/pax-LampD1)
+Copyright (C) 2019 by Calin Radoni
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,6 +26,19 @@ class HTTPSrvLampD1 : public PaxHttpServer
 public:
     HTTPSrvLampD1(void);
     virtual ~HTTPSrvLampD1();
+
+    /**
+     * Data for status string
+     */
+    uint32_t animationID = 0;
+    uint32_t currentColor = 0x010101;
+    uint32_t currentIntensity = 0;
+
+protected:
+    /**
+     * @warning Delete returned string with 'free' !
+     */
+    virtual char* CreateJSONStatusString(bool addWhitespaces);
 };
 
 #endif

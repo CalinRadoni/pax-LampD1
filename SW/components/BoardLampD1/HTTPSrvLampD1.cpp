@@ -1,6 +1,6 @@
 /**
-This file is part of pax-devices (https://github.com/CalinRadoni/pax-devices)
-Copyright (C) 2019+ by Calin Radoni
+This file is part of pax-LampD1 (https://github.com/CalinRadoni/pax-LampD1)
+Copyright (C) 2019 by Calin Radoni
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // -----------------------------------------------------------------------------
 
-static const char* TAG = "HTTPSrvLampD1";
+// static const char* TAG = "HTTPSrvLampD1";
 
 // -----------------------------------------------------------------------------
 
@@ -39,4 +39,35 @@ HTTPSrvLampD1::HTTPSrvLampD1() : PaxHttpServer()
 HTTPSrvLampD1::~HTTPSrvLampD1(void)
 {
     //
+}
+
+// -----------------------------------------------------------------------------
+
+char* HTTPSrvLampD1::CreateJSONStatusString(bool addWhitespaces)
+{
+    char *str = nullptr;
+
+    if (configuration == nullptr) { return str; }
+    if (boardInfo == nullptr) { return str; }
+
+    cJSON *cfg = cJSON_CreateObject();
+
+    if (cJSON_AddNumberToObject(cfg, "animationID", animationID) == NULL) {
+        cJSON_Delete(cfg);
+        return str;
+    }
+    if (cJSON_AddNumberToObject(cfg, "currentColor", currentColor) == NULL) {
+        cJSON_Delete(cfg);
+        return str;
+    }
+    if (cJSON_AddNumberToObject(cfg, "currentIntensity", currentIntensity) == NULL) {
+        cJSON_Delete(cfg);
+        return str;
+    }
+
+    if (addWhitespaces) { str = cJSON_Print(cfg); }
+    else                { str = cJSON_PrintUnformatted(cfg); }
+
+    cJSON_Delete(cfg);
+    return str;
 }

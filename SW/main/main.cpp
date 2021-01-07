@@ -1,6 +1,6 @@
 /**
-This file is part of pax-devices (https://github.com/CalinRadoni/pax-devices)
-Copyright (C) 2019+ by Calin Radoni
+This file is part of pax-LampD1 (https://github.com/CalinRadoni/pax-LampD1)
+Copyright (C) 2019 by Calin Radoni
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,6 +51,7 @@ static const uint32_t timer00ticks1000ms = 1000 / timer00period; // ticks for 1 
 // TODO: Make a class to control the onboard LED based on the driver/ledc API
 
 BoardLampD1 board;
+bool stationMode;
 esp32hal::Timers timers;
 DStrip stripL, stripR;
 DLEDController LEDcontroller;
@@ -129,11 +130,25 @@ extern "C" {
                 secondTick += notifiedValue;
                 if (secondTick >= timer00ticks1000ms) {
                     secondTick -= timer00ticks1000ms; // at least 1 second passed
+
+                    if (stationMode) {
+                        if (!board.IsConnectedToAP()) {
+                            // the board has lost the WiFi connectivity
+                            board.StopTheServers();
+                            if (board.RestartStationMode(3) == ESP_OK) {
+                                board.StartTheServers();
+                                board.ConfigureMDNS();
+                            }
+                            else {
+                                // failed to connect to WiFi
+                            }
+                        }
+                    }
+
                     tens++;
-                    if (tens >= 10) {
-                        tens -= 10;
-                        if (board.esp32.RefreshSystemState())
-                            board.esp32.PrintTaskStatus();
+                    if (tens >= 60) {
+                        tens -= 60;
+                        board.RefreshSystemState(true);
                     }
                 }
             }
@@ -287,12 +302,26 @@ extern "C" {
 
         esp_err_t err = board.Initialize();
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "Initialization failed !");
-            board.DoNothingForever();
+            uint8_t initFailSeverity = board.InitFailSeverity();
+
+            board.PowerPeripherals(false);
+
+            ESP_LOGE(TAG, "Initialization failed with severity level %d !", initFailSeverity);
+            if (initFailSeverity == 5) {
+                // critical system error
+                board.EnterDeepSleep(60);
+            }
+
+            // retry in a few minutes, maybe it will recover ?
+            board.Restart(120 + (esp_random() & 0x3F));
         }
         ESP_LOGI(TAG, "Board initialized OK");
 
-        board.PowerOn();
+        stationMode = board.IsConnectedToAP();
+
+        board.httpServer.animationID = animationID;
+        board.httpServer.currentColor = currentColor;
+        board.httpServer.currentIntensity = currentIntensity;
 
         displayMutex = xSemaphoreCreateMutex();
         if (displayMutex != NULL) {
@@ -300,7 +329,8 @@ extern "C" {
         }
         else {
             ESP_LOGE(TAG, "Failed to create the display mutex !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
 
         xTaskCreate(DisplayTask, "Display task", 2048, NULL, uxTaskPriorityGet(NULL) + 3, &xDisplayTask);
@@ -309,7 +339,8 @@ extern "C" {
         }
         else {
             ESP_LOGE(TAG, "Failed to create the display task !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
 
         xTaskCreate(AnimationTask, "Animation task", 2048, NULL, uxTaskPriorityGet(NULL) + 5, &xAnimationTask);
@@ -318,11 +349,13 @@ extern "C" {
         }
         else {
             ESP_LOGE(TAG, "Failed to create the animation task !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
         if (!timers.EnableTimer(xAnimationTask, 0, 1, 100, false, true)) {
             ESP_LOGE(TAG, "Failed to enable the timer 0:1 !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
 
         xTaskCreate(HTTPTask, "HTTP command handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 1, &xHTTPHandlerTask);
@@ -331,7 +364,8 @@ extern "C" {
         }
         else {
             ESP_LOGE(TAG, "Failed to create the HTTP command handling task !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
 
         xTaskCreate(LoopTask, "Loop task", 4096, NULL, uxTaskPriorityGet(NULL) + 2, &xLoopTask);
@@ -340,11 +374,13 @@ extern "C" {
         }
         else {
             ESP_LOGE(TAG, "Failed to create the Loop task !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
         if (!timers.EnableTimer(xLoopTask, 0, 0, timer00period, true, false)) {
             ESP_LOGE(TAG, "Failed to enable the timer 0:0 !");
-            board.DoNothingForever();
+            board.PowerPeripherals(false);
+            board.EnterDeepSleep(60);
         }
     }
 }

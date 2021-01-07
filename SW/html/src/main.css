@@ -19,9 +19,9 @@ h1, h2, h3 {
     margin: 1rem 0 0.5rem;
     font-weight: bold;
 }
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.2rem; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1.1rem; }
 
 .fullheight {
     height: 100vh;
@@ -36,7 +36,7 @@ h3 { font-size: 1.2rem; }
 .header {
     text-align: center;
     top: auto;
-    margin: 3em auto;
+    margin: 1rem auto 2rem auto;
 }
 
 .title, .tagline {
@@ -56,6 +56,10 @@ a {
 a:hover,
 a:focus {
     text-decoration: underline;
+}
+
+p {
+    margin: 0.5rem 0;
 }
 
 .nav {
@@ -88,7 +92,7 @@ a:focus {
 }
 
 .content {
-    padding: 1rem;
+    padding: 0 1rem 1rem 1rem;
     flex: 1 1 0;
     display: flex;
     flex-flow: column;
@@ -122,15 +126,19 @@ a:focus {
 }
 
 .srow {
-    display: flex;
-    flex-flow: row nowrap;
-    align-items: stretch;
+    width: 100%;
 }
-.scell {
-    flex: 1 1 0;
+.scell, .scellp {
+    max-width: 100%;
+    width: 100%;
+}
+.scellp {
+    padding-right: 2.1rem;
 }
 .colorBox {
     min-height: 2rem;
+    display: inline-block;
+    width: 16.6%;
 }
 
 .intSel {
@@ -150,13 +158,10 @@ input {
     max-width: 400px;
     margin: 0 auto;
 }
-.cfgrow {
-    display: flex;
-    flex-flow: row wrap;
-}
 .cfgcell {
-    flex: 1 1 100%;
-    margin: 0 8px 8px 8px;
+    float: left;
+    width: 100%;
+    padding: 0 8px 8px 8px;
 }
 .cfgL {
     font-size: 0.9rem;
@@ -168,6 +173,7 @@ input {
     font-weight: normal;
     font-style: italic;
     color: #555;
+    margin: 0;
 }
 
 button {
@@ -188,25 +194,38 @@ button:disabled {
 
 /* for show / hide password buttons, fixed width is needed */
 .shb {
-    width: 5rem;
-    margin-left: 0.5rem;
+    width: 2rem;
+    margin-left: -2rem;
+    border: none;
+    background: none;
+    color: #888;
+}
+.shb:hover {
+    background: none;
+    color: #222;
+}
+.shb:focus {
+    background: none;
 }
 
-.mrgLeft {
-    margin-left: 0.5rem;
-}
+.mLeft { margin-left: 0.5rem; }
+.mTop  { margin-top: 0.5rem; }
 
-.aleft { text-align: left; }
+.aleft   { text-align: left; }
 .acenter { text-align: center; }
-.aright { text-align: right; }
+.aright  { text-align: right; }
 
-@media (min-width: 768px) {
+.dBlock { display: block; }
+
+.lh2 { line-height: 2rem; }
+
+@media (min-width: 640px) {
     .sidebar {
         flex: 0 0 256px;
     }
 
     .header {
-        margin: 3rem 1rem 0;
+        margin: 2rem 1rem 0;
         text-align: right;
     }
 
@@ -223,7 +242,7 @@ button:disabled {
     .config {
         max-width: 800px;
     }
-    .cfgrow {
-        flex-flow: row nowrap;
+    .cfgcell {
+        width: 50%;
     }
 }

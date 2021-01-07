@@ -16,7 +16,7 @@
     "directory": "SW/html"
   },
   "scripts": {
-    "test": "echo Use the build script build.sh or 'build' and 'build-prod' commands",
+    "test": "echo Use the build script, build.sh, or 'build' and 'build-prod' commands",
     "build": "./build.sh",
     "build-prod": "./build.sh -pk"
   },
