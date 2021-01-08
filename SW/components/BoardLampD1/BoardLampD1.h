@@ -56,6 +56,8 @@ public:
 
     virtual esp_err_t PostInit(void);
 
+    virtual bool PowerPeripherals(bool);
+
     esp_err_t StartTheServers(void);
     void StopTheServers(void);
     esp_err_t ConfigureMDNS(void);

@@ -124,6 +124,12 @@ esp_err_t BoardLampD1::PostInit(void)
     return ESP_OK;
 }
 
+bool BoardLampD1::PowerPeripherals(bool turnOn)
+{
+    gpio_set_level(GPIO_Power, turnOn ? 1 : 0);
+    return true;
+}
+
 esp_err_t BoardLampD1::StartTheServers(void)
 {
     if (!httpServer.Initialize()) {
