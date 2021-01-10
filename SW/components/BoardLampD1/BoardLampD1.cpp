@@ -57,11 +57,6 @@ BoardLampD1::~BoardLampD1(void)
 
 esp_err_t BoardLampD1::EarlyInit(void)
 {
-    esp32hal::GPIO gpio;
-    esp32hal::ADC adc;
-    esp32hal::I2C i2c0;
-    esp32hal::SPI hspi;
-
     // onboard "button"
     gpio.ModeInput(GPIO_BOOT, GPIO_PULLUP_ENABLE, GPIO_PULLDOWN_DISABLE);
 

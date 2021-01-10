@@ -87,6 +87,11 @@ public:
      */
     HTTPSrvLampD1 httpServer;
 
+    /**
+     * Objects for hardware interfaces
+     */
+    esp32hal::GPIO gpio;
+
 protected:
 private:
 };
