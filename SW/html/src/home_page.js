@@ -26,8 +26,9 @@ class HomePage {
 
         let s = '<h3>Select color</h3>' +
             '<div class="srow">' +
-                '<label class="cfgL" for="userColor">Color code in hex</label>' +
-                '<input id="userColor" class="mLeft" type="text" value="" maxlength="8" size="8" />' +
+                '<label class="cfgL" for="userColor">Color</label>' +
+                '<input id="userColor" class="mLeft" type="color" value="' + this.getCurrentColor() + '"' +
+                    ' oninput="app.ChangeColor(this.value)" onchange="app.ChangeColor(this.value)">' +
             '</div>' +
             '<div class="srow mTop">' +
                 '<button class="mTop"       onclick="app.SetColor()">Set</button>' +
@@ -35,7 +36,7 @@ class HomePage {
             '</div>' +
             '<h3>Intensity</h3>' +
             '<div class="srow mTop">' +
-                '<input id="userInt" type="range" class="intSel" min="1" max="100" value="1" oninput="app.SetIntensity()" />' +
+                '<input id="userInt" type="range" class="intSel" min="1" max="100" value="' + this.getCurrentIntensity() + '" oninput="app.SetIntensity()" />' +
             '</div>' +
             '<h3>RGB and RYB</h3>' +
             '<div class="srow mTop">' + this.CreateSmallColorWheel(0) + '</div>' +
@@ -46,17 +47,31 @@ class HomePage {
         this.updateInfo();
     }
 
+    getCurrentColor() {
+        if (this.statusInfo == null)
+            return "#000000";
+
+        let val = this.statusInfo.get('currentColor');
+        let s = val.toString(16);
+        while (s.length < 6)
+            s = '0' + s;
+        s = '#' + s;
+        return s;
+    }
+
+    getCurrentIntensity() {
+        if (this.statusInfo == null)
+            return "1";
+        return this.statusInfo.get('currentIntensity');
+    }
+
     updateInfo() {
         let a = document.getElementById('userColor');
-        if (a != null) {
-            let val = this.statusInfo.get('currentColor');
-            a.value = val.toString(16);
-        }
+        if (a != null)
+            a.value = this.getCurrentColor();
 
         a = document.getElementById('userInt');
-        if (a != null) {
-            let val = this.statusInfo.get('currentIntensity');
-            a.value = val;
-        }
+        if (a != null)
+            a.value = this.getCurrentIntensity();
     }
 }

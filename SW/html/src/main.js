@@ -138,11 +138,20 @@ class App {
     }
     SetLightColor(userColor) {
         let str = userColor.toString(16);
+        while (str.length < 6)
+            str = '0' + str;
+        str = '#' + str;
         document.getElementById('userColor').value = str;
         this.SendCmd(2, userColor);
     }
     SetColor() {
         let str = document.getElementById('userColor').value;
+        str = str.slice(1);
+        let val = parseInt(str, 16);
+        this.SendCmd(2, val);
+    }
+    ChangeColor(userColor) {
+        let str = userColor.slice(1);
         let val = parseInt(str, 16);
         this.SendCmd(2, val);
     }
