@@ -86,6 +86,19 @@ extern "C" {
         return (r << 16) | (g << 8) | b;
     }
 
+    void updateAnimationID(uint32_t val) {
+        animationID = val;
+        board.httpServer.animationID = val;
+    }
+    void updateCurrentColor(uint32_t val) {
+        currentColor = val;
+        board.httpServer.currentColor = val;
+    }
+    void updateCurrentIntensity(uint32_t val) {
+        currentIntensity = val;
+        board.httpServer.currentIntensity = val;
+    }
+
     static void LoopTask(void *taskParameter) {
         uint32_t secondTick = 0;
         uint32_t timerTicks = 0;
@@ -225,7 +238,7 @@ extern "C" {
                                 step++;
                                 if (step >= (6 * stripL.description.stripLen)) {
                                     step = 0;
-                                    animationID = 2;
+                                    updateAnimationID(2);
                                 }
                                 break;
 
@@ -235,9 +248,9 @@ extern "C" {
                                 step++;
                                 if (step >= 1024) {
                                     step = 0;
-                                    currentColor = 0xFF00FF;
-                                    currentIntensity = 2;
-                                    animationID = 0;
+                                    updateCurrentColor(0xFF00FF);
+                                    updateCurrentIntensity(2);
+                                    updateAnimationID(0);
                                 }
                                 break;
 
@@ -270,16 +283,16 @@ extern "C" {
                     case 0: // nop-like command
                         break;
                     case 1:
-                        currentColor = 0;
-                        animationID = 0;
+                        updateCurrentColor(0);
+                        updateAnimationID(0);
                         break;
                     case 2:
-                        currentColor = httpCmd.data;
-                        animationID = 0;
+                        updateCurrentColor(httpCmd.data);
+                        updateAnimationID(0);
                         break;
                     case 3:
-                        currentIntensity = httpCmd.data;
-                        animationID = 0;
+                        updateCurrentIntensity(httpCmd.data);
+                        updateAnimationID(0);
                         break;
 
                     case 0xFE:
@@ -319,9 +332,9 @@ extern "C" {
 
         stationMode = board.IsConnectedToAP();
 
-        board.httpServer.animationID = animationID;
-        board.httpServer.currentColor = currentColor;
-        board.httpServer.currentIntensity = currentIntensity;
+        updateAnimationID(animationID);
+        updateCurrentColor(currentColor);
+        updateCurrentIntensity(currentIntensity);
 
         displayMutex = xSemaphoreCreateMutex();
         if (displayMutex != NULL) {
