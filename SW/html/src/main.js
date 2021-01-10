@@ -46,7 +46,7 @@ class App {
         this.GetConfig();
         this.GetStatus();
 
-        this.statusTimer = setInterval(this.GetStatus(), 2000);
+        this.statusTimer = setInterval(function() { app.GetStatus(); }, 2000);
 
         this.HashHandler();
         window.addEventListener('hashchange', this.HashHandler, false);
