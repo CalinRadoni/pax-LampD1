@@ -1,4 +1,4 @@
-name: Build with ESP-IDF v4.1
+name: Build with installed ESP-IDF v4.1
 
 on: [push]
 
