@@ -6,12 +6,15 @@
 /HW/*.bak
 /HW/*.kicad_pcb-bak
 
-# ignore auxiliary files from ESP-IDF and Visual Studio Code
+# ignore auxiliary files from ESP-IDF
 /SW/sdkconfig
 /SW/sdkconfig.old
 /SW/build/
+
+# ignore auxiliary files from Visual Studio Code
 *.code-workspace
 /.vscode/.browse.VC.db
 
-# other
+# ignore auxiliary directories
 /notes/
+build/
