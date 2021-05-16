@@ -30,8 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "BoardLampD1.h"
 
 #include "esp32_hal_timers.h"
-#include "DStrip.h"
 #include "DLEDController.h"
+#include "light-effect.h"
 
 #include "sdkconfig.h"
 
@@ -53,23 +53,26 @@ static const uint32_t timer00ticks1000ms = 1000 / timer00period; // ticks for 1 
 BoardLampD1 board;
 bool stationMode;
 esp32hal::Timers timers;
-DStrip stripL, stripR;
+DStripData stripL, stripR;
 DLEDController LEDcontroller;
 ESP32RMTChannel rmt0, rmt1;
 
-uint32_t animationID = 1;
+LightEffect effL, effR;
+const uint32_t noAnimation = 0xFFFFFFFF;
+uint32_t animationID = 0;
+uint32_t httpAnimationID = noAnimation;
+
 uint32_t currentColor = 0xFF00FF;
-uint32_t currentIntensity = 10; // 0 ... 100
+uint32_t currentIntensity = 2; // 0 ... 100
 
 static SemaphoreHandle_t displayMutex = NULL;
 static TaskHandle_t xDisplayTask = NULL;
-static TaskHandle_t xAnimationTask = NULL;
 static TaskHandle_t xHTTPHandlerTask = NULL;
 static TaskHandle_t xLoopTask = NULL;
 
 extern "C" {
 
-    uint32_t RGBadjusted (uint32_t val) {
+    void RGBadjust(ColorWRGB& rgb, uint32_t val) {
         uint32_t r, g, b;
 
         b = val & 0x0000FF;
@@ -79,21 +82,104 @@ extern "C" {
         uint32_t ci;
 
         ci = currentIntensity > 100 ? 100 : currentIntensity;
-        r = r * ci / 100;
-        g = g * ci / 100;
-        b = b * ci / 100;
-
-        return (r << 16) | (g << 8) | b;
+        rgb.r = r * ci / 100;
+        rgb.g = g * ci / 100;
+        rgb.b = b * ci / 100;
     }
+
+#define STATIC_RAINBOW
 
     void updateAnimationID(uint32_t val) {
         animationID = val;
         board.httpServer.animationID = val;
+
+        uint32_t delayR = 20;
+        uint8_t stepLen = 9;
+#ifdef STATIC_RAINBOW
+        uint32_t waitDelay = 5000;
+#endif
+
+        bool updateStrip = false;
+
+        switch (animationID) {
+        case 0:
+            effL.Initialize(Effect::color); effL.useGammaCorrection = false;
+            effR.Initialize(Effect::color); effR.useGammaCorrection = false;
+            RGBadjust(effL.color0, currentColor);
+            RGBadjust(effR.color0, currentColor);
+            break;
+
+        case 1:
+        case 3:
+        case 5:
+            effL.Initialize(Effect::blink);
+            effL.color0.Set(0x010101); effL.delay0 = 1000; effL.color1.Set((uint32_t)0); effL.delay1 = 1000;
+            effL.useGammaCorrection = false; effL.stopWhenCycleCompleted = true;
+            effR.Initialize(Effect::blink);
+            effR.color0.Set((uint32_t)0); effR.delay0 = 1000; effR.color1.Set(0x010101); effR.delay1 = 1000;
+            effR.useGammaCorrection = false; effR.stopWhenCycleCompleted = true;
+            break;
+
+        case 2:
+            effL.Initialize(Effect::rainbow);
+            effL.delay0 = delayR; effL.hsvBase.s = 0xFF; effL.hsvBase.v = 0xFF; effL.stopWhenCycleCompleted = true;
+            effL.hueInc = true; effL.hueStep = 2 * stepLen; effL.constantEnergy = false; effL.useGammaCorrection = false;
+            effR.Initialize(Effect::rainbow);
+            effR.delay0 = delayR; effR.hsvBase.s = 0xFF; effR.hsvBase.v = 0xFF; effR.stopWhenCycleCompleted = true;
+            effR.hueInc = true; effR.hueStep = stepLen; effR.constantEnergy = true; effR.useGammaCorrection = false;
+
+#ifdef STATIC_RAINBOW
+            effL.Step(0); effR.Step(0); updateStrip = true;
+            effL.Initialize(Effect::delay); effL.delay0 = waitDelay;
+            effR.Initialize(Effect::delay); effR.delay0 = waitDelay;
+#endif
+            break;
+
+        case 4:
+            effL.Initialize(Effect::rainbow);
+            effL.delay0 = delayR; effL.hsvBase.s = 0xFF; effL.hsvBase.v = 0xFF; effL.stopWhenCycleCompleted = true;
+            effL.hueInc = true; effL.hueStep = stepLen; effL.constantEnergy = true; effL.useGammaCorrection = false;
+            effR.Initialize(Effect::rainbow);
+            effR.delay0 = delayR; effR.hsvBase.s = 0xFF; effR.hsvBase.v = 0xFF; effR.stopWhenCycleCompleted = true;
+            effR.hueInc = true; effR.hueStep = stepLen; effR.constantEnergy = true; effR.useGammaCorrection = true;
+
+#ifdef STATIC_RAINBOW
+            effL.Step(0); effR.Step(0); updateStrip = true;
+            effL.Initialize(Effect::delay); effL.delay0 = waitDelay;
+            effR.Initialize(Effect::delay); effR.delay0 = waitDelay;
+#endif
+            break;
+
+        case 6:
+            effL.Initialize(Effect::rainbow);
+            effL.delay0 = delayR; effL.hsvBase.s = 0xFF; effL.hsvBase.v = 0xFF; effL.stopWhenCycleCompleted = true;
+            effL.hueInc = true; effL.hueStep = 2 * stepLen; effL.constantEnergy = false; effL.useGammaCorrection = false;
+            effR.Initialize(Effect::rainbow);
+            effR.delay0 = delayR; effR.hsvBase.s = 0xFF; effR.hsvBase.v = 0xFF; effR.stopWhenCycleCompleted = true;
+            effR.hueInc = true; effR.hueStep = 2 * stepLen; effR.constantEnergy = false; effR.useGammaCorrection = true;
+
+#ifdef STATIC_RAINBOW
+            effL.Step(0); effR.Step(0); updateStrip = true;
+            effL.Initialize(Effect::delay); effL.delay0 = waitDelay;
+            effR.Initialize(Effect::delay); effR.delay0 = waitDelay;
+#endif
+            break;
+
+        default:
+            break;
+        }
+
+        if (updateStrip) {
+            LEDcontroller.SetLEDs(stripL, rmt0);
+            LEDcontroller.SetLEDs(stripR, rmt1);
+        }
     }
+
     void updateCurrentColor(uint32_t val) {
         currentColor = val;
         board.httpServer.currentColor = val;
     }
+
     void updateCurrentIntensity(uint32_t val) {
         currentIntensity = val;
         board.httpServer.currentIntensity = val;
@@ -134,7 +220,6 @@ extern "C" {
                         // on-board button is not pressed
                         if (keyPressCount != 0) {
                             // on-board button was just released, do something with keyPressCount, if you want
-
                             keyPressCount = 0; // set this to 0 for next iterations
                         }
                     }
@@ -173,8 +258,13 @@ extern "C" {
     }
 
     static void DisplayTask(void *taskParameter) {
-        stripL.Create(3, cfgLEDcount, cfgMaxCCV);
-        stripR.Create(3, cfgLEDcount, cfgMaxCCV);
+        TickType_t xLastWakeTime;
+        const TickType_t xFrequency = 20 / portTICK_PERIOD_MS;
+        int64_t usSinceBoot = 0;
+        uint32_t msTime = 0;
+
+        stripL.Create(cfgLEDcount);
+        stripR.Create(cfgLEDcount);
         rmt0.Initialize((rmt_channel_t)cfgChannelL, (gpio_num_t)cfgOutputPinL, cfgLEDcount * 24);
         rmt0.ConfigureForWS2812x();
         rmt1.Initialize((rmt_channel_t)cfgChannelR, (gpio_num_t)cfgOutputPinR, cfgLEDcount * 24);
@@ -182,92 +272,60 @@ extern "C" {
 
         LEDcontroller.SetMutex(displayMutex);
         LEDcontroller.SetLEDType(LEDType::WS2812);
-        LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-        LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
+        effL.SetDataBuffer(stripL.Data(), stripL.DataLength());
+        effR.SetDataBuffer(stripR.Data(), stripR.DataLength());
 
-        const TickType_t xBlockTime = 1000 / portTICK_PERIOD_MS; // set timeout to 1000ms
+        animationID = 1;
+        updateCurrentColor(currentColor);
+        updateCurrentIntensity(currentIntensity);
+        updateAnimationID(animationID);
+        httpAnimationID = noAnimation;
+        uint32_t nextAnimationID = noAnimation;
+        LEDcontroller.SetLEDs(stripL, rmt0);
+        LEDcontroller.SetLEDs(stripR, rmt1);
+
+        xLastWakeTime = xTaskGetTickCount();
         for(;;) {
-            uint32_t res = ulTaskNotifyTake(pdTRUE, xBlockTime);
-            if (res == 0) {
-                // timeout
+            usSinceBoot = esp_timer_get_time();
+            msTime = (uint32_t)(usSinceBoot / 1000);
+
+            if (httpAnimationID != noAnimation) {
+                updateAnimationID(httpAnimationID);
+                httpAnimationID = noAnimation;
+            }
+
+            if (xSemaphoreTake(displayMutex, portMAX_DELAY) == pdFALSE) {
+                vTaskDelay(1);
             }
             else {
-                LEDcontroller.SetLEDs(stripL.description.data, stripL.description.dataLen, &rmt0);
-                LEDcontroller.SetLEDs(stripR.description.data, stripR.description.dataLen, &rmt1);
-            }
-        }
-        vTaskDelete(NULL);
-    }
+                bool updateStrip = false;
 
-    static void AnimationTask(void *taskParameter) {
-        uint16_t step = 0;
-        uint32_t nextInterval;
-        const TickType_t xBlockTime = 1000 / portTICK_PERIOD_MS; // set timeout to 1000ms
-        for(;;) {
-            uint32_t res = ulTaskNotifyTake(pdTRUE, xBlockTime);
-            if (res == 0) {
-                // timeout
-            }
-            else {
-                // set next timer alarm period
-                switch (animationID) {
-                    case 0 : nextInterval = 250; break;
-                    case 1 : nextInterval = 20; break;
-                    case 2 : nextInterval = 50; break;
-                    default: nextInterval = 250; break;
-                }
-                timers.RestartTimer(0, 1, nextInterval);
-
-                if (displayMutex != NULL) {
-                    if (xSemaphoreTake(displayMutex, xBlockTime) == pdTRUE) {
-                        // compute current frame
-                        switch (animationID) {
-                            case 0:
-                                {
-                                    uint32_t adj = RGBadjusted(currentColor);
-                                    for (uint16_t i = 0; i < cfgLEDcount; ++i) {
-                                        stripL.SetPixel(i, adj);
-                                        stripR.SetPixel(i, adj);
-                                    }
-                                }
-                                break;
-
-                            case 1:
-                                stripL.MovePixel(step);
-                                stripR.MovePixel(step);
-                                step++;
-                                if (step >= (6 * stripL.description.stripLen)) {
-                                    step = 0;
-                                    updateAnimationID(2);
-                                }
-                                break;
-
-                            case 2:
-                                stripL.RainbowStep(step);
-                                stripR.RainbowStep(1024 - step);
-                                step++;
-                                if (step >= 1024) {
-                                    step = 0;
-                                    updateCurrentColor(0xFF00FF);
-                                    updateCurrentIntensity(2);
-                                    updateAnimationID(0);
-                                }
-                                break;
-
-                            default: break;
-                        }
-
-                        xSemaphoreGive(displayMutex);
+                if (animationID < 7) {
+                    if (effL.Step(msTime)) updateStrip = true;
+                    if (effR.Step(msTime)) updateStrip = true;
+                    if (!effL.IsRunning()) {
+                        nextAnimationID = animationID + 1;
                     }
                 }
-
-                // notify the display task
-                if (xDisplayTask != NULL) {
-                    xTaskNotifyGive(xDisplayTask);
+                else {
+                    nextAnimationID = 0;
                 }
+
+                xSemaphoreGive(displayMutex);
+
+                if (updateStrip) {
+                    LEDcontroller.SetLEDs(stripL, rmt0);
+                    LEDcontroller.SetLEDs(stripR, rmt1);
+                }
+
+                if ((nextAnimationID != animationID) && (nextAnimationID != noAnimation)) {
+                    updateAnimationID(nextAnimationID);
+                    nextAnimationID = noAnimation;
+                }
+
+                vTaskDelayUntil(&xLastWakeTime, xFrequency);
             }
         }
-        timers.DisableTimer(0, 1);
         vTaskDelete(NULL);
     }
 
@@ -284,15 +342,15 @@ extern "C" {
                         break;
                     case 1:
                         updateCurrentColor(0);
-                        updateAnimationID(0);
+                        httpAnimationID = 0;
                         break;
                     case 2:
                         updateCurrentColor(httpCmd.data);
-                        updateAnimationID(0);
+                        httpAnimationID = 0;
                         break;
                     case 3:
                         updateCurrentIntensity(httpCmd.data);
-                        updateAnimationID(0);
+                        httpAnimationID = 0;
                         break;
 
                     case 0xFE:
@@ -332,10 +390,6 @@ extern "C" {
 
         stationMode = board.IsConnectedToAP();
 
-        updateAnimationID(animationID);
-        updateCurrentColor(currentColor);
-        updateCurrentIntensity(currentIntensity);
-
         displayMutex = xSemaphoreCreateMutex();
         if (displayMutex != NULL) {
             ESP_LOGI(TAG, "Display mutex created.");
@@ -346,7 +400,7 @@ extern "C" {
             board.EnterDeepSleep(60);
         }
 
-        xTaskCreate(DisplayTask, "Display task", 2048, NULL, uxTaskPriorityGet(NULL) + 3, &xDisplayTask);
+        xTaskCreatePinnedToCore(DisplayTask, "Display task", 2048, NULL, uxTaskPriorityGet(NULL) + 5, &xDisplayTask, (BaseType_t)1);
         if (xDisplayTask != NULL) {
             ESP_LOGI(TAG, "Display task created.");
         }
@@ -356,22 +410,7 @@ extern "C" {
             board.EnterDeepSleep(60);
         }
 
-        xTaskCreate(AnimationTask, "Animation task", 2048, NULL, uxTaskPriorityGet(NULL) + 5, &xAnimationTask);
-        if (xAnimationTask != NULL) {
-            ESP_LOGI(TAG, "Animation task created.");
-        }
-        else {
-            ESP_LOGE(TAG, "Failed to create the animation task !");
-            board.PowerPeripherals(false);
-            board.EnterDeepSleep(60);
-        }
-        if (!timers.EnableTimer(xAnimationTask, 0, 1, 100, false, true)) {
-            ESP_LOGE(TAG, "Failed to enable the timer 0:1 !");
-            board.PowerPeripherals(false);
-            board.EnterDeepSleep(60);
-        }
-
-        xTaskCreate(HTTPTask, "HTTP command handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 1, &xHTTPHandlerTask);
+        xTaskCreatePinnedToCore(HTTPTask, "HTTP command handling task", 2048, NULL, uxTaskPriorityGet(NULL) + 1, &xHTTPHandlerTask, (BaseType_t)0);
         if (xHTTPHandlerTask != NULL) {
             ESP_LOGI(TAG, "HTTP command handling task created.");
         }
@@ -381,7 +420,7 @@ extern "C" {
             board.EnterDeepSleep(60);
         }
 
-        xTaskCreate(LoopTask, "Loop task", 4096, NULL, uxTaskPriorityGet(NULL) + 2, &xLoopTask);
+        xTaskCreatePinnedToCore(LoopTask, "Loop task", 4096, NULL, uxTaskPriorityGet(NULL) + 2, &xLoopTask, (BaseType_t)0);
         if (xLoopTask != NULL) {
             ESP_LOGI(TAG, "Loop task created.");
         }
